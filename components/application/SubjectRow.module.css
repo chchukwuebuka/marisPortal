@@ -42,3 +42,13 @@
   background: var(--color-error-soft);
   color: var(--color-error);
 }
+
+@media (max-width: 560px) {
+  .row {
+    flex-wrap: wrap;
+  }
+  .name {
+    width: 100%;
+    flex: none;
+  }
+}

@@ -225,3 +225,23 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 560px) {
+  .progressTop {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .nextAction {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .deadline {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}

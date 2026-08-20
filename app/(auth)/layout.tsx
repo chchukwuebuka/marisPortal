@@ -56,7 +56,13 @@ export default function AuthLayout({
       <main className={styles.formPanel}>
         <div className={styles.formInner}>
           <Link href="/" className={styles.mobileBrand}>
-            <span className={styles.mobileCrest}>MP</span>
+            <Image
+              src="/image/logo.png"
+              alt=""
+              width={40}
+              height={40}
+              className={styles.mobileCrest}
+            />
             <span className={styles.mobileBrandName}>Marist Polytechnic</span>
           </Link>
           {children}

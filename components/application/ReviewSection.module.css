@@ -104,4 +104,8 @@
   .body {
     grid-template-columns: 1fr;
   }
+  
+  .head {
+    flex-wrap: wrap;
+  }
 }
