@@ -67,3 +67,15 @@
   align-items: center;
   background: var(--color-canvas);
 }
+
+@media (max-width: 560px) {
+  .footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  
+  .footer > * {
+    width: 100%;
+    justify-content: center;
+  }
+}
