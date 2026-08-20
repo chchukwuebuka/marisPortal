@@ -1,0 +1,16 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.emptyWrap {
+  margin-bottom: 20px;
+}
+
+.addAction {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+}

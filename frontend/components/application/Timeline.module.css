@@ -1,0 +1,104 @@
+.timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 14px;
+  padding-bottom: 24px;
+}
+
+/* Connector line running through the markers. */
+.item::before {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 26px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--color-border);
+}
+
+.last {
+  padding-bottom: 0;
+}
+
+.last::before {
+  display: none;
+}
+
+.marker {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  color: #fff;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-border-strong);
+}
+
+/* ---- States ------------------------------------------------- */
+
+.done .marker {
+  background: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.current .marker {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px var(--color-primary-soft);
+}
+
+.current .dot {
+  background: #fff;
+}
+
+.current .item::before,
+.done::before {
+  background: var(--color-success);
+}
+
+.content {
+  padding-top: 3px;
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
+  color: var(--color-ink);
+}
+
+.upcoming .label {
+  color: var(--color-muted);
+  font-weight: var(--fw-medium);
+}
+
+.note {
+  margin-top: 3px;
+  font-size: var(--fs-sm);
+  color: var(--color-muted);
+  line-height: var(--lh-snug);
+}
+
+.time {
+  margin-top: 5px;
+  font-size: var(--fs-xs);
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}

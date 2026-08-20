@@ -1,0 +1,89 @@
+.card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  padding: 20px;
+}
+
+.card + .card {
+  margin-top: 18px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  color: var(--color-ink);
+}
+
+.subjectsHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+
+.checks li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+.ok {
+  color: var(--color-success);
+}
+
+.pending {
+  color: var(--color-muted);
+}
+
+.subjectList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.adder {
+  display: grid;
+  grid-template-columns: 1fr 120px auto;
+  align-items: start;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.adderBtn {
+  /* Align the button with the input row (labels sit above the controls). */
+  margin-top: 25px;
+  height: 40px;
+}
+
+@media (max-width: 560px) {
+  .adder {
+    grid-template-columns: 1fr 110px;
+  }
+
+  .adderBtn {
+    grid-column: 1 / -1;
+    margin-top: 0;
+    width: 100%;
+  }
+}

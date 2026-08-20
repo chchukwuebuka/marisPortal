@@ -1,0 +1,319 @@
+/* Shared styles for the (auth) route group: layout + all three pages. */
+
+.wrap {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+}
+
+@media (max-width: 860px) {
+  .wrap {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- Brand panel (left) ------------------------------------- */
+
+.brandPanel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 48px;
+  color: #fff;
+  background:
+    linear-gradient(to bottom,
+      rgba(36, 71, 159, 0.85) 0%,
+      rgba(15, 34, 82, 0.95) 100%),
+    url("/image/ma2.jpg") center/cover no-repeat;
+  overflow: hidden;
+}
+
+.brandPanel::after {
+  content: "";
+  position: absolute;
+  right: -80px;
+  bottom: -80px;
+  width: 320px;
+  height: 320px;
+  border-radius: var(--radius-full);
+  /* background: rgba(217, 119, 6, 0.16); */
+  filter: blur(8px);
+}
+
+@media (max-width: 860px) {
+  .brandPanel {
+    display: none;
+  }
+}
+
+.brandTop {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.brandCrest {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-xl);
+  flex-shrink: 0;
+}
+
+.brandName {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  line-height: 1.15;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.brandTag {
+  font-size: var(--fs-sm);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.brandMid {
+  position: relative;
+  z-index: 1;
+  max-width: 50ch;
+}
+
+.brandHeadline {
+  font-family: var(--font-display);
+  font-size: var(--fs-3xl);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  letter-spacing: -0.01em;
+}
+
+.brandLede {
+  margin-top: 14px;
+  font-size: var(--fs-lg);
+  color: rgba(255, 255, 255, 0.78);
+  line-height: var(--lh-normal);
+}
+
+.features {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.feature {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: var(--fs-base);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.featureIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.14);
+  flex-shrink: 0;
+}
+
+.brandFoot {
+  position: relative;
+  z-index: 1;
+  font-size: var(--fs-sm);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ---- Form panel (right) ------------------------------------- */
+
+.formPanel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  background: var(--color-canvas);
+}
+
+.formInner {
+  width: 100%;
+  max-width: 400px;
+}
+
+.mobileBrand {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.mobileCrest {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  flex-shrink: 0;
+}
+
+.mobileBrandName {
+  font-family: var(--font-display);
+  font-size: var(--fs-base);
+  font-weight: var(--fw-bold);
+  color: var(--color-ink);
+}
+
+@media (max-width: 860px) {
+  .mobileBrand {
+    display: flex;
+  }
+}
+
+/* ---- Auth card ---------------------------------------------- */
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 32px;
+}
+
+.head {
+  margin-bottom: 24px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+  color: var(--color-ink);
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  margin-top: 6px;
+  font-size: var(--fs-base);
+  color: var(--color-muted);
+  line-height: var(--lh-snug);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 420px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: -2px;
+}
+
+.link {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.submit {
+  margin-top: 4px;
+}
+
+.switch {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+  text-align: center;
+  font-size: var(--fs-sm);
+  color: var(--color-muted);
+}
+
+.switch a {
+  color: var(--color-primary);
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+}
+
+.switch a:hover {
+  text-decoration: underline;
+}
+
+.demoNote {
+  margin-bottom: 20px;
+}
+
+/* ---- Forgot-password success -------------------------------- */
+
+.sent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: 8px 0 4px;
+}
+
+.sentIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: var(--color-success-soft);
+  color: var(--color-success);
+  margin-bottom: 8px;
+}
+
+.sentText {
+  font-size: var(--fs-base);
+  color: var(--color-muted);
+  line-height: var(--lh-normal);
+  max-width: 40ch;
+  margin-bottom: 12px;
+}
+
+.sentEmail {
+  font-weight: var(--fw-semibold);
+  color: var(--color-ink);
+}

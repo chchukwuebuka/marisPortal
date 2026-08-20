@@ -1,0 +1,365 @@
+/* ---- Empty / terminal states -------------------------------- */
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 36px 24px;
+  gap: 6px;
+}
+
+.stateIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  margin-bottom: 8px;
+}
+
+.stateInfo {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.stateError {
+  background: var(--color-error-soft);
+  color: var(--color-error);
+}
+
+.stateTitle {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-semibold);
+  color: var(--color-ink);
+}
+
+.stateText {
+  max-width: 46ch;
+  font-size: var(--fs-base);
+  color: var(--color-muted);
+  line-height: var(--lh-normal);
+  margin-bottom: 12px;
+}
+
+.stateMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-sm);
+  color: var(--color-muted);
+  margin-bottom: 16px;
+}
+
+/* ---- Offer call-to-action ----------------------------------- */
+
+.offerCard {
+  margin-bottom: 20px;
+  border-color: var(--color-secondary);
+  background: var(--color-secondary-softer);
+}
+
+.offer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.offerHero {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.offerIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius);
+  background: var(--color-secondary);
+  color: var(--color-secondary-contrast);
+  flex-shrink: 0;
+}
+
+.offerTitle {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  color: var(--color-ink);
+}
+
+.offerText {
+  margin-top: 4px;
+  font-size: var(--fs-base);
+  color: var(--color-ink-soft);
+  line-height: var(--lh-normal);
+  max-width: 62ch;
+}
+
+.offerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.banner {
+  margin-bottom: 20px;
+}
+
+/* ---- The letter sheet --------------------------------------- */
+
+.sheet {
+  max-width: 720px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  padding: 40px;
+}
+
+.letterHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.crest {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-lg);
+  flex-shrink: 0;
+}
+
+.org {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  color: var(--color-ink);
+}
+
+.addr {
+  font-size: var(--fs-sm);
+  color: var(--color-muted);
+}
+
+.stamp {
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.08em;
+  align-self: center;
+}
+
+.refRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.refItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.refLabel {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+  font-weight: var(--fw-medium);
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  font-weight: var(--fw-semibold);
+  color: var(--color-ink);
+}
+
+.letterTitle {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  color: var(--color-ink);
+  margin-bottom: 20px;
+}
+
+.salute {
+  font-size: var(--fs-base);
+  color: var(--color-ink);
+  margin-bottom: 14px;
+}
+
+.para {
+  font-size: var(--fs-base);
+  color: var(--color-ink-soft);
+  line-height: var(--lh-normal);
+  margin-bottom: 16px;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 4px 0 20px;
+  padding: 18px 20px;
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius);
+}
+
+.detailRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: var(--fs-base);
+}
+
+.detailRow dt {
+  color: var(--color-muted);
+  font-weight: var(--fw-medium);
+  flex-shrink: 0;
+}
+
+.detailRow dd {
+  color: var(--color-ink);
+  font-weight: var(--fw-semibold);
+  text-align: right;
+}
+
+/* ---- Verification block ------------------------------------- */
+
+.verify {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin: 28px 0;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.qr {
+  display: grid;
+  gap: 0;
+  width: 118px;
+  height: 118px;
+  padding: 7px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.qr span {
+  display: block;
+}
+
+.qrOn {
+  background: var(--color-ink);
+}
+
+.verifyText {
+  min-width: 0;
+}
+
+.verifyBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--color-success);
+}
+
+.verifyNote {
+  margin: 6px 0 8px;
+  font-size: var(--fs-sm);
+  color: var(--color-muted);
+  line-height: var(--lh-snug);
+}
+
+.code {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  font-weight: var(--fw-bold);
+  color: var(--color-ink);
+}
+
+/* ---- Signature & footer ------------------------------------- */
+
+.sign {
+  margin-top: 32px;
+  padding-top: 8px;
+}
+
+.signName {
+  font-family: var(--font-display);
+  font-size: var(--fs-base);
+  font-weight: var(--fw-bold);
+  color: var(--color-ink);
+  border-top: 1px solid var(--color-border-strong);
+  padding-top: 6px;
+  display: inline-block;
+  min-width: 200px;
+}
+
+.signRole {
+  font-size: var(--fs-sm);
+  color: var(--color-muted);
+  margin-top: 2px;
+}
+
+.letterFooter {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+  font-size: var(--fs-sm);
+  color: var(--color-muted);
+  text-align: center;
+}
+
+@media (max-width: 560px) {
+  .sheet {
+    padding: 24px;
+  }
+  .verify {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media print {
+  .offerCard,
+  .banner {
+    display: none;
+  }
+  .sheet {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    max-width: none;
+  }
+}

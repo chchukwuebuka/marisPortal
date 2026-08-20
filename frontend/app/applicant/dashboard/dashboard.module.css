@@ -1,0 +1,227 @@
+.grid {
+  display: grid;
+  grid-template-columns: 1.7fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.mainCol,
+.sideCol {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+/* Progress card */
+.progressCard {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.progressTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.progressLabel {
+  font-size: var(--fs-sm);
+  color: var(--color-muted);
+  font-weight: var(--fw-medium);
+}
+
+.kpi {
+  font-family: var(--font-display);
+  font-size: var(--fs-3xl);
+  font-weight: var(--fw-bold);
+  color: var(--color-ink);
+  line-height: 1.05;
+  margin: 2px 0;
+}
+
+.kpi span {
+  font-variant-numeric: tabular-nums;
+}
+
+.progressMeta {
+  font-size: var(--fs-sm);
+  color: var(--color-muted);
+}
+
+.nextAction {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border-radius: var(--radius);
+  background: var(--color-primary-softer);
+  border: 1px solid var(--color-primary-soft);
+}
+
+.nextLabel {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-primary);
+}
+
+.nextHint {
+  font-size: var(--fs-sm);
+  color: var(--color-ink-soft);
+  margin-top: 2px;
+}
+
+/* Checklist */
+.checklist {
+  list-style: none;
+}
+
+.checklist li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.checkRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  text-decoration: none;
+  transition: background var(--dur) var(--ease);
+}
+
+.checkRow:hover {
+  background: var(--color-surface-sunken);
+}
+
+.checkNum {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.checkNumDone {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: #fff;
+}
+
+.checkLabel {
+  flex: 1;
+  font-size: var(--fs-base);
+  font-weight: var(--fw-medium);
+  color: var(--color-ink);
+  min-width: 0;
+}
+
+.chevron {
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+/* Summary */
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.sumRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 0;
+}
+
+.sumRow + .sumRow {
+  border-top: 1px solid var(--color-border);
+}
+
+.sumLabel {
+  font-size: var(--fs-sm);
+  color: var(--color-muted);
+}
+
+.sumValue {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--color-ink);
+  text-align: right;
+}
+
+.sumValueMono {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+/* Payment card */
+.payCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.feeAmount {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+  color: var(--color-ink);
+}
+
+.feeAmount span {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Deadline */
+.deadline {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.deadlineIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius);
+  background: var(--color-secondary-soft);
+  color: var(--color-secondary-active);
+  flex-shrink: 0;
+}
+
+.deadlineLabel {
+  font-size: var(--fs-sm);
+  color: var(--color-muted);
+}
+
+.deadlineDate {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  color: var(--color-ink);
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

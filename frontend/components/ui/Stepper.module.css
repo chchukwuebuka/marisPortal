@@ -1,0 +1,121 @@
+.list {
+  list-style: none;
+  display: flex;
+}
+
+.vertical {
+  flex-direction: column;
+  gap: 2px;
+}
+
+.horizontal {
+  flex-direction: row;
+  gap: 4px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.item {
+  position: relative;
+}
+
+/* Connector line (vertical): runs from this marker down to the next */
+.vertical .item:not(:last-child) .marker::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 28px;
+  transform: translateX(-50%);
+  width: 2px;
+  height: calc(100% - 20px);
+  background: var(--color-border);
+}
+
+.vertical .item.complete:not(:last-child) .marker::after {
+  background: var(--color-primary);
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  text-decoration: none;
+  transition: background var(--dur) var(--ease);
+}
+
+.horizontal .link {
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+  min-width: 76px;
+  text-align: center;
+}
+
+.link:hover {
+  background: var(--color-surface-sunken);
+}
+
+.marker {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+  transition:
+    background var(--dur) var(--ease),
+    border-color var(--dur) var(--ease),
+    color var(--dur) var(--ease);
+}
+
+.num {
+  line-height: 1;
+}
+
+.labels {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-muted-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* States */
+.complete .marker {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+
+.current .marker {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.current .label {
+  color: var(--color-primary);
+  font-weight: var(--fw-semibold);
+}
+
+.complete .label {
+  color: var(--color-ink);
+}
