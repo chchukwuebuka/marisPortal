@@ -23,6 +23,12 @@ export const metadata: Metadata = {
     "Apply for admission to Marist Polytechnic. Complete your application, upload documents, pay your fee, and track your admission status.",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {

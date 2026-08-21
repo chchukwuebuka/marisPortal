@@ -35,7 +35,7 @@
   margin: 4px 0;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 640px) {
   .grid {
     grid-template-columns: 1fr;
   }
