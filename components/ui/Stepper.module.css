@@ -45,6 +45,10 @@
   transition: background var(--dur) var(--ease);
 }
 
+.horizontal .item {
+  flex-shrink: 0;
+}
+
 .horizontal .link {
   flex-direction: column;
   gap: 6px;
@@ -55,6 +59,17 @@
 
 .link:hover {
   background: var(--color-surface-sunken);
+}
+
+@media (max-width: 640px) {
+  .horizontal .label {
+    display: none;
+  }
+  .horizontal .link {
+    min-width: 0;
+    padding: 8px 4px;
+    gap: 0;
+  }
 }
 
 .marker {
