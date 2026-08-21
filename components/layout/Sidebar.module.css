@@ -29,20 +29,11 @@
   min-width: 0;
 }
 
-.crest {
+.crestImg {
   flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   width: 38px;
   height: 38px;
-  border-radius: var(--radius);
-  background: var(--color-primary);
-  color: var(--color-primary-contrast);
-  font-family: var(--font-display);
-  font-weight: var(--fw-bold);
-  font-size: var(--fs-base);
-  letter-spacing: 0.02em;
+  object-fit: contain;
 }
 
 .brandText {

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -54,7 +55,13 @@ export function Sidebar({
       <aside className={cn(styles.sidebar, open && styles.sidebarOpen)}>
         <div className={styles.brand}>
           <Link href="/applicant/dashboard" className={styles.brandLink}>
-            <span className={styles.crest}>MP</span>
+            <Image
+              src="/image/logo.png"
+              alt="Logo"
+              width={38}
+              height={38}
+              className={styles.crestImg}
+            />
             <span className={styles.brandText}>
               <span className={styles.brandName}>Marist Polytechnic</span>
               <span className={styles.brandTag}>Admissions Portal</span>
