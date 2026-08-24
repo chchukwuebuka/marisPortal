@@ -9,6 +9,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useApplication } from "@/hooks/useApplication";
+import { useCatalogue } from "@/hooks/useCatalogue";
 import { AppStatusTag, Alert, Button } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { stepPath } from "@/lib/constants";
@@ -25,8 +26,13 @@ import {
 import styles from "./submit.module.css";
 
 export default function SubmitStep() {
-  const { application, paid, submitApplication } = useApplication();
+  const { application, submitApplication } = useApplication();
+  const { getRequirementsForProgramme } = useCatalogue();
   const [attempted, setAttempted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const requirements = getRequirementsForProgramme(application.programme?.programmeId);
 
   const submitted =
     Boolean(application.applicationNumber) &&
@@ -66,7 +72,7 @@ export default function SubmitStep() {
     },
     {
       label: "Required documents uploaded",
-      ok: areDocumentsComplete(application),
+      ok: areDocumentsComplete(application, requirements),
       href: stepPath("documents"),
     },
     {
@@ -74,18 +80,19 @@ export default function SubmitStep() {
       ok: isReviewComplete(application),
       href: stepPath("review"),
     },
-    {
-      label: "Application fee paid",
-      ok: paid,
-      href: "/applicant/payments",
-    },
   ];
 
   const canSubmit = items.every((i) => i.ok);
 
-  function handleSubmit() {
+  async function handleSubmit() {
     setAttempted(true);
-    submitApplication();
+    setSubmitError(null);
+    setSubmitting(true);
+    const res = await submitApplication();
+    setSubmitting(false);
+    if (!res.ok) {
+      setSubmitError(res.errors.join(" "));
+    }
   }
 
   if (submitted) {
@@ -150,10 +157,18 @@ export default function SubmitStep() {
           ))}
         </ul>
 
-        {attempted && !canSubmit && (
+        {(attempted && !canSubmit) && (
           <div className={styles.alert}>
             <Alert tone="error" title="Some items still need attention">
               Resolve every item marked above, then submit again.
+            </Alert>
+          </div>
+        )}
+
+        {submitError && (
+          <div className={styles.alert}>
+            <Alert tone="error" title="Submission failed">
+              {submitError}
             </Alert>
           </div>
         )}
@@ -166,7 +181,7 @@ export default function SubmitStep() {
           >
             Back to review
           </Button>
-          <Button onClick={handleSubmit} disabled={!canSubmit}>
+          <Button onClick={handleSubmit} disabled={!canSubmit} loading={submitting}>
             Submit application
           </Button>
         </div>

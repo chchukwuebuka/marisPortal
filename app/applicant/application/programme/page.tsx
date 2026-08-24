@@ -1,94 +1,159 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { CalendarClock, GraduationCap, Layers } from "lucide-react";
 import { useApplication } from "@/hooks/useApplication";
+import { useCatalogue } from "@/hooks/useCatalogue";
 import { StepActions, StepPanel } from "@/components/application";
-import { Alert, Field, Select } from "@/components/ui";
+import { Alert, Button, Field, LoadingBlock, Select } from "@/components/ui";
 import { stepNav } from "@/lib/flow";
-import {
-  findActiveSession,
-  findProgramme,
-  listDepartments,
-  listProgrammes,
-  listSchools,
-} from "@/services";
-import { programmeSchema, type ProgrammeFormValues } from "@/schemas";
+import { formatNaira } from "@/lib/format";
 import form from "@/components/application/formLayout.module.css";
 import styles from "./programme.module.css";
 
 export default function ProgrammeStep() {
   const router = useRouter();
   const { application, updateProgramme } = useApplication();
+  const {
+    loading,
+    error: catalogueError,
+    findActiveSession,
+    findProgramme,
+    listDepartments,
+    listProgrammes,
+    listSchools,
+  } = useCatalogue();
   const nav = stepNav("programme");
   const sel = application.programme;
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    setValue,
-    formState: { errors, isSubmitting },
-  } = useForm<ProgrammeFormValues>({
-    resolver: zodResolver(programmeSchema),
-    defaultValues: {
-      schoolId: sel?.schoolId ?? "",
-      departmentId: sel?.departmentId ?? "",
-      programmeId: sel?.programmeId ?? "",
-    },
-  });
+  const [selectedSchoolId, setSelectedSchoolId] = useState<string>(
+    sel?.schoolId ?? "",
+  );
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>(
+    sel?.departmentId ?? "",
+  );
+  const [selectedProgrammeId, setSelectedProgrammeId] = useState<string>(
+    sel?.programmeId ?? "",
+  );
 
-  const schoolId = useWatch({ control, name: "schoolId" });
-  const departmentId = useWatch({ control, name: "departmentId" });
-  const programmeId = useWatch({ control, name: "programmeId" });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const departments = listDepartments(schoolId);
-  const programmes = listProgrammes(departmentId);
-  const selectedProgramme = findProgramme(programmeId);
+  // Sync initial values if application loads after initial render
+  useEffect(() => {
+    if (sel?.schoolId && !selectedSchoolId) {
+      setSelectedSchoolId(sel.schoolId);
+    }
+    if (sel?.departmentId && !selectedDepartmentId) {
+      setSelectedDepartmentId(sel.departmentId);
+    }
+    if (sel?.programmeId && !selectedProgrammeId) {
+      setSelectedProgrammeId(sel.programmeId);
+    }
+  }, [sel, selectedSchoolId, selectedDepartmentId, selectedProgrammeId]);
+
+  const schools = listSchools();
+  const availableDepartments = listDepartments(selectedSchoolId);
+  const availableProgrammes = listProgrammes(selectedDepartmentId);
+  const selectedProgramme = findProgramme(selectedProgrammeId);
   const notAccepting =
     !!selectedProgramme && !selectedProgramme.acceptingApplications;
 
-  const schoolReg = register("schoolId");
-  const deptReg = register("departmentId");
+  const handleSchoolChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedSchoolId(e.target.value);
+    setSelectedDepartmentId("");
+    setSelectedProgrammeId("");
+    setError(null);
+  };
 
-  function onSubmit(values: ProgrammeFormValues) {
-    const programme = findProgramme(values.programmeId);
-    if (programme && !programme.acceptingApplications) return;
-    updateProgramme({ ...values, sessionId: findActiveSession().id });
-    router.push(nav.nextHref);
+  const handleDepartmentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedDepartmentId(e.target.value);
+    setSelectedProgrammeId("");
+    setError(null);
+  };
+
+  const handleProgrammeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedProgrammeId(e.target.value);
+    setError(null);
+  };
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedSchoolId) {
+      setError("Please select a school / faculty.");
+      return;
+    }
+    if (!selectedDepartmentId) {
+      setError("Please select a department.");
+      return;
+    }
+    if (!selectedProgrammeId) {
+      setError("Please select a programme.");
+      return;
+    }
+    if (notAccepting) {
+      setError("This programme is currently not accepting applications.");
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      await updateProgramme({
+        schoolId: selectedSchoolId,
+        departmentId: selectedDepartmentId,
+        programmeId: selectedProgrammeId,
+        sessionId: findActiveSession().id,
+      });
+      router.push(nav.nextHref);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to save programme selection. Please try again.",
+      );
+      setSubmitting(false);
+    }
+  }
+
+  if (loading && schools.length === 0) {
+    return <LoadingBlock label="Loading academic programmes…" />;
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate>
+    <form onSubmit={handleSubmit} noValidate>
       <StepPanel
         title="Programme Selection"
         description="Choose the school, department, and programme you are applying to."
         footer={
           <StepActions
             backHref={nav.prevHref}
-            loading={isSubmitting}
-            submitDisabled={notAccepting}
+            loading={submitting}
+            submitDisabled={!selectedProgrammeId || notAccepting}
           />
         }
       >
+        {catalogueError && (
+          <div style={{ marginBottom: 16 }}>
+            <Alert tone="warning" title="Notice">
+              {catalogueError}
+            </Alert>
+          </div>
+        )}
+
         <div className={form.grid}>
           <Field
             className={form.span2}
             label="School / Faculty"
             required
-            error={errors.schoolId?.message}
+            error={error && !selectedSchoolId ? error : undefined}
           >
             <Select
-              {...schoolReg}
+              value={selectedSchoolId}
               placeholder="Select a school"
-              onChange={(e) => {
-                schoolReg.onChange(e);
-                setValue("departmentId", "");
-                setValue("programmeId", "");
-              }}
-              options={listSchools().map((s) => ({
+              onChange={handleSchoolChange}
+              options={schools.map((s) => ({
                 value: s.id,
                 label: s.name,
               }))}
@@ -98,17 +163,14 @@ export default function ProgrammeStep() {
           <Field
             label="Department"
             required
-            error={errors.departmentId?.message}
+            error={error && selectedSchoolId && !selectedDepartmentId ? error : undefined}
           >
             <Select
-              {...deptReg}
+              value={selectedDepartmentId}
               placeholder="Select a department"
-              disabled={!schoolId}
-              onChange={(e) => {
-                deptReg.onChange(e);
-                setValue("programmeId", "");
-              }}
-              options={departments.map((d) => ({
+              disabled={!selectedSchoolId}
+              onChange={handleDepartmentChange}
+              options={availableDepartments.map((d) => ({
                 value: d.id,
                 label: d.name,
               }))}
@@ -118,15 +180,16 @@ export default function ProgrammeStep() {
           <Field
             label="Programme"
             required
-            error={errors.programmeId?.message}
+            error={error && selectedDepartmentId && !selectedProgrammeId ? error : undefined}
           >
             <Select
-              {...register("programmeId")}
+              value={selectedProgrammeId}
               placeholder="Select a programme"
-              disabled={!departmentId}
-              options={programmes.map((prog) => ({
+              disabled={!selectedDepartmentId}
+              onChange={handleProgrammeChange}
+              options={availableProgrammes.map((prog) => ({
                 value: prog.id,
-                label: `${prog.level} — ${prog.name}`,
+                label: `${prog.level} ${prog.name}${prog.option ? ` (${prog.option})` : ""}`,
                 disabled: !prog.acceptingApplications,
               }))}
             />
@@ -141,7 +204,10 @@ export default function ProgrammeStep() {
               </span>
               <div>
                 <p className={styles.detailLabel}>Programme</p>
-                <p className={styles.detailValue}>{selectedProgramme.name}</p>
+                <p className={styles.detailValue}>
+                  {selectedProgramme.level} {selectedProgramme.name}
+                  {selectedProgramme.option && ` (${selectedProgramme.option})`}
+                </p>
               </div>
             </div>
             <div className={styles.detailItem}>
@@ -165,6 +231,27 @@ export default function ProgrammeStep() {
                 </p>
               </div>
             </div>
+            {selectedProgramme.totalFee && (
+              <div className={styles.detailItem}>
+                <span className={styles.detailIcon}>
+                  ₦
+                </span>
+                <div>
+                  <p className={styles.detailLabel}>Application Fee</p>
+                  <p className={styles.detailValue}>
+                    {formatNaira(Number(selectedProgramme.totalFee))}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {error && (
+          <div className={styles.alertWrap}>
+            <Alert tone="error" title="Selection required">
+              {error}
+            </Alert>
           </div>
         )}
 

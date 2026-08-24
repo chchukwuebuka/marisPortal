@@ -2,6 +2,7 @@
 
 import { Printer } from "lucide-react";
 import { useApplication } from "@/hooks/useApplication";
+import { useCatalogue } from "@/hooks/useCatalogue";
 import { PageHeader } from "@/components/layout";
 import {
   Badge,
@@ -11,11 +12,11 @@ import {
   LoadingBlock,
 } from "@/components/ui";
 import { formatDateTime, formatNaira } from "@/lib/format";
-import { buildInvoiceItems, findProgramme } from "@/services";
 import styles from "./receipts.module.css";
 
 export default function ReceiptsPage() {
   const { applicant, application, payment, paid, hydrated } = useApplication();
+  const { findProgramme } = useCatalogue();
 
   if (!hydrated) {
     return <LoadingBlock label="Loading your receipt…" />;
@@ -41,7 +42,6 @@ export default function ReceiptsPage() {
     );
   }
 
-  const items = buildInvoiceItems();
   const programme = findProgramme(application.programme?.programmeId);
   const fullName = `${applicant.firstName} ${applicant.lastName}`;
 
@@ -97,12 +97,10 @@ export default function ReceiptsPage() {
         </dl>
 
         <ul className={styles.items}>
-          {items.map((item) => (
-            <li key={item.label} className={styles.item}>
-              <span>{item.label}</span>
-              <span className={styles.mono}>{formatNaira(item.amount)}</span>
-            </li>
-          ))}
+          <li className={styles.item}>
+            <span>Application Fee</span>
+            <span className={styles.mono}>{formatNaira(payment.amount)}</span>
+          </li>
           <li className={styles.total}>
             <span>Total paid</span>
             <span className={styles.mono}>{formatNaira(payment.amount)}</span>
@@ -112,11 +110,11 @@ export default function ReceiptsPage() {
         <dl className={styles.payMeta}>
           <div className={styles.metaRow}>
             <dt>Payment reference</dt>
-            <dd className={styles.mono}>{payment.reference}</dd>
+            <dd className={styles.mono}>{payment.reference || "N/A"}</dd>
           </div>
           <div className={styles.metaRow}>
             <dt>Channel</dt>
-            <dd>{payment.channel ?? "—"}</dd>
+            <dd>{payment.channel ?? "Card / Online"}</dd>
           </div>
           <div className={styles.metaRow}>
             <dt>Date paid</dt>

@@ -1,6 +1,5 @@
-import type { Application } from "@/types/domain";
+import type { Application, DocumentRequirement } from "@/types/domain";
 import type { StepKey } from "@/lib/constants";
-import { getRequirementsSync } from "@/services/documents";
 
 /* Per-section completeness (§16 uses these as the submission gate). */
 
@@ -62,10 +61,21 @@ export function isJambComplete(a: Application): boolean {
   );
 }
 
-export function areDocumentsComplete(a: Application): boolean {
-  const required = getRequirementsSync(a.programme?.programmeId).filter(
-    (r) => r.required,
-  );
+/**
+ * Check if all required documents have been uploaded.
+ * Accepts the requirements list as a parameter instead of calling a
+ * synchronous mock function.
+ */
+export function areDocumentsComplete(
+  a: Application,
+  requirements: DocumentRequirement[] = [],
+): boolean {
+  const required = requirements.filter((r) => r.required);
+  if (required.length === 0) {
+    // If no requirements are loaded yet, consider documents incomplete
+    // unless the applicant has uploaded at least one document
+    return a.documents.length > 0;
+  }
   return required.every((r) =>
     a.documents.some((d) => d.requirementId === r.id && Boolean(d.fileName)),
   );
@@ -75,18 +85,11 @@ export function isReviewComplete(a: Application): boolean {
   return a.confirmedAccuracy === true;
 }
 
-export const STEP_COMPLETENESS: Record<StepKey, (a: Application) => boolean> = {
-  personal: isPersonalComplete,
-  contact: isContactComplete,
-  programme: isProgrammeComplete,
-  education: isEducationComplete,
-  olevel: isOlevelComplete,
-  jamb: isJambComplete,
-  documents: areDocumentsComplete,
-  review: isReviewComplete,
-};
-
-export function computeStepStatus(a: Application): Record<StepKey, boolean> {
+/** Build the step status map, accepting requirements for the documents check. */
+export function computeStepStatus(
+  a: Application,
+  requirements: DocumentRequirement[] = [],
+): Record<StepKey, boolean> {
   return {
     personal: isPersonalComplete(a),
     contact: isContactComplete(a),
@@ -94,19 +97,27 @@ export function computeStepStatus(a: Application): Record<StepKey, boolean> {
     education: isEducationComplete(a),
     olevel: isOlevelComplete(a),
     jamb: isJambComplete(a),
-    documents: areDocumentsComplete(a),
+    documents: areDocumentsComplete(a, requirements),
     review: isReviewComplete(a),
   };
 }
 
-export function progressPercent(a: Application): number {
-  const keys = Object.keys(STEP_COMPLETENESS) as StepKey[];
-  const done = keys.filter((k) => STEP_COMPLETENESS[k](a)).length;
+export function progressPercent(
+  a: Application,
+  requirements: DocumentRequirement[] = [],
+): number {
+  const status = computeStepStatus(a, requirements);
+  const keys = Object.keys(status) as StepKey[];
+  const done = keys.filter((k) => status[k]).length;
   return Math.round((done / keys.length) * 100);
 }
 
 /** §16 submission validation — returns a list of human-readable blockers. */
-export function validateForSubmission(a: Application, paid: boolean): string[] {
+export function validateForSubmission(
+  a: Application,
+  paid: boolean,
+  requirements: DocumentRequirement[] = [],
+): string[] {
   const errors: string[] = [];
   if (!isPersonalComplete(a)) errors.push("Personal information is incomplete.");
   if (!isContactComplete(a)) errors.push("Contact information is incomplete.");
@@ -118,10 +129,11 @@ export function validateForSubmission(a: Application, paid: boolean): string[] {
       "O'Level result is incomplete (need ≥5 subjects including English & Mathematics).",
     );
   if (!isJambComplete(a)) errors.push("JAMB information is incomplete.");
-  if (!areDocumentsComplete(a))
+  if (!areDocumentsComplete(a, requirements))
     errors.push("One or more required documents are missing.");
   if (!isReviewComplete(a))
     errors.push("You must confirm the information is accurate.");
-  if (!paid) errors.push("The application fee has not been paid.");
+  // Payment feature disabled for now — fee payment is not required to submit.
+  // if (!paid) errors.push("The application fee has not been paid.");
   return errors;
 }

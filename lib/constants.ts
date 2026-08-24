@@ -109,6 +109,9 @@ export const NIGERIAN_STATES: string[] = [
 /** Storage key for the mock application draft. */
 export const DRAFT_STORAGE_KEY = "marist.application.draft.v1";
 
+/** Storage key for the currently signed-in user profile. */
+export const AUTH_USER_KEY = "marist.auth.user.v1";
+
 /* ---- Human-readable enum labels ----------------------------- */
 
 export const GENDER_LABELS: Record<Gender, string> = {

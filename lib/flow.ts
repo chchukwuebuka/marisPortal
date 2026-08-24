@@ -43,13 +43,15 @@ export function getNextAction(
           hint: `Next: ${firstIncomplete.label}`,
         };
       }
-      if (!paid) {
-        return {
-          label: "Pay application fee",
-          href: "/applicant/payments",
-          hint: "All sections complete — pay the fee to submit",
-        };
-      }
+      // Payment feature disabled for now — skip the "pay the fee" gate and go
+      // straight to submission once all sections are complete.
+      // if (!paid) {
+      //   return {
+      //     label: "Pay application fee",
+      //     href: "/applicant/payments",
+      //     hint: "All sections complete — pay the fee to submit",
+      //   };
+      // }
       return {
         label: "Submit application",
         href: "/applicant/application/submit",

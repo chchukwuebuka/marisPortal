@@ -41,7 +41,10 @@ export interface Programme {
   name: string; // e.g. "ND Computer Science"
   level: ProgrammeLevel;
   code: string;
+  option?: string | null;
   durationYears: number;
+  applicationFee?: string;
+  totalFee?: string;
   acceptingApplications: boolean;
 }
 
@@ -188,6 +191,26 @@ export interface AdmissionDecision {
   conditions?: string;
   verificationCode: string; // e.g. "MAR-ADM-XXXXXXXX"
   accepted?: boolean;
+}
+
+/* ---- Notifications ------------------------------------------- */
+
+export type NotificationCategory =
+  | "application"
+  | "payment"
+  | "document"
+  | "admission"
+  | "account"
+  | "general";
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  category: NotificationCategory;
+  isRead: boolean;
+  readAt?: string;
+  createdAt: string;
 }
 
 /* ---- Applicant & application aggregate ----------------------- */

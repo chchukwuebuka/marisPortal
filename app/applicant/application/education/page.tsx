@@ -8,14 +8,13 @@ import { useApplication } from "@/hooks/useApplication";
 import { EducationRow, StepActions, StepPanel } from "@/components/application";
 import { Alert, Button, Field, Input } from "@/components/ui";
 import { stepNav } from "@/lib/flow";
-import { uid } from "@/services";
 import { educationSchema, type EducationFormValues, type EducationInput } from "@/schemas";
 import form from "@/components/application/formLayout.module.css";
 import styles from "./education.module.css";
 
 export default function EducationStep() {
   const router = useRouter();
-  const { application, setEducation } = useApplication();
+  const { application, addEducation, deleteEducation, setEducation } = useApplication();
   const nav = stepNav("education");
   const records = application.education;
 
@@ -23,7 +22,7 @@ export default function EducationStep() {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<EducationInput, unknown, EducationFormValues>({
     resolver: zodResolver(educationSchema),
     defaultValues: {
@@ -34,13 +33,23 @@ export default function EducationStep() {
     },
   });
 
-  function onAdd(values: EducationFormValues) {
-    setEducation([...records, { id: uid("edu"), ...values }]);
+  async function onAdd(values: EducationFormValues) {
+    try {
+      await addEducation(values);
+    } catch {
+      // Fallback local update if offline or pending
+      const tempId = `edu-${Date.now()}`;
+      setEducation([...records, { id: tempId, ...values }]);
+    }
     reset();
   }
 
-  function onRemove(id: string) {
-    setEducation(records.filter((r) => r.id !== id));
+  async function onRemove(id: string) {
+    try {
+      await deleteEducation(id);
+    } catch {
+      setEducation(records.filter((r) => r.id !== id));
+    }
   }
 
   return (
@@ -117,6 +126,7 @@ export default function EducationStep() {
           <Button
             type="submit"
             variant="secondary"
+            loading={isSubmitting}
             leftIcon={<Plus size={16} />}
           >
             Add institution

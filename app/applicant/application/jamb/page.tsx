@@ -37,8 +37,8 @@ export default function JambStep() {
     },
   });
 
-  function onSubmit(values: JambFormValues) {
-    updateJamb(values);
+  async function onSubmit(values: JambFormValues) {
+    await updateJamb(values);
     router.push(nav.nextHref);
   }
 

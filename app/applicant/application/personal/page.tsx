@@ -18,7 +18,7 @@ import form from "@/components/application/formLayout.module.css";
 
 export default function PersonalStep() {
   const router = useRouter();
-  const { application, applicant, updatePersonal } = useApplication();
+  const { application, updatePersonal } = useApplication();
   const nav = stepNav("personal");
   const p = application.personal;
 
@@ -29,12 +29,12 @@ export default function PersonalStep() {
   } = useForm<PersonalFormValues>({
     resolver: zodResolver(personalSchema),
     defaultValues: {
-      firstName: p?.firstName ?? applicant.firstName ?? "",
+      firstName: p?.firstName ?? "",
       middleName: p?.middleName ?? "",
-      lastName: p?.lastName ?? applicant.lastName ?? "",
+      lastName: p?.lastName ?? "",
       dateOfBirth: p?.dateOfBirth ?? "",
       gender: p?.gender,
-      nationality: p?.nationality ?? "Nigerian",
+      nationality: p?.nationality ?? "",
       stateOfOrigin: p?.stateOfOrigin ?? "",
       lga: p?.lga ?? "",
       maritalStatus: p?.maritalStatus,
@@ -42,8 +42,8 @@ export default function PersonalStep() {
     },
   });
 
-  function onSubmit(values: PersonalFormValues) {
-    updatePersonal(values);
+  async function onSubmit(values: PersonalFormValues) {
+    await updatePersonal(values);
     router.push(nav.nextHref);
   }
 
@@ -100,7 +100,7 @@ export default function PersonalStep() {
             required
             error={errors.nationality?.message}
           >
-            <Input {...register("nationality")} />
+            <Input {...register("nationality")} placeholder="e.g. Nigerian" />
           </Field>
           <Field
             label="State of origin"

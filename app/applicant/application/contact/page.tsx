@@ -12,7 +12,7 @@ import form from "@/components/application/formLayout.module.css";
 
 export default function ContactStep() {
   const router = useRouter();
-  const { application, applicant, updateContact } = useApplication();
+  const { application, updateContact } = useApplication();
   const nav = stepNav("contact");
   const c = application.contact;
 
@@ -25,7 +25,7 @@ export default function ContactStep() {
     defaultValues: {
       phone: c?.phone ?? "",
       altPhone: c?.altPhone ?? "",
-      email: c?.email ?? applicant.email ?? "",
+      email: c?.email ?? "",
       residentialAddress:
         c?.residentialAddress ?? application.personal?.residentialAddress ?? "",
       emergencyContactName: c?.emergencyContactName ?? "",
@@ -34,8 +34,8 @@ export default function ContactStep() {
     },
   });
 
-  function onSubmit(values: ContactFormValues) {
-    updateContact(values);
+  async function onSubmit(values: ContactFormValues) {
+    await updateContact(values);
     router.push(nav.nextHref);
   }
 
@@ -66,7 +66,7 @@ export default function ContactStep() {
             required
             error={errors.email?.message}
           >
-            <Input type="email" {...register("email")} />
+            <Input type="email" {...register("email")} placeholder="e.g. you@example.com" />
           </Field>
           <Field
             className={form.span2}

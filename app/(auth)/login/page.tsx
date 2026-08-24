@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -7,6 +8,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { LogIn } from "lucide-react";
 import { Alert, Button, Checkbox, Field, Input } from "@/components/ui";
+import { useAuth } from "@/hooks/useAuth";
+import { ApiError } from "@/lib/api";
 import styles from "../auth.module.css";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -24,6 +27,9 @@ type LoginValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
+  const [formError, setFormError] = useState<string | null>(null);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -33,10 +39,21 @@ export default function LoginPage() {
     defaultValues: { email: "", password: "", remember: true },
   });
 
-  async function onSubmit() {
-    // Mock sign-in: no real auth yet — simulate a round-trip, then enter.
-    await new Promise((r) => setTimeout(r, 650));
-    router.push("/applicant/dashboard");
+  async function onSubmit(values: LoginValues) {
+    setFormError(null);
+    setUnverifiedEmail(null);
+    try {
+      await login(values.email, values.password);
+      router.replace("/applicant/dashboard");
+    } catch (err) {
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : "We couldn't sign you in. Please try again.";
+      // A common cause is an unverified email — offer a way forward.
+      if (/verif/i.test(message)) setUnverifiedEmail(values.email);
+      setFormError(message);
+    }
   }
 
   return (
@@ -48,9 +65,23 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <Alert tone="info" className={styles.demoNote}>
-        Demo portal — any email and password will sign you in.
-      </Alert>
+      {formError && (
+        <Alert tone="error" className={styles.demoNote}>
+          {formError}
+          {unverifiedEmail && (
+            <>
+              {" "}
+              <Link
+                href={`/verify?email=${encodeURIComponent(unverifiedEmail)}`}
+                className={styles.link}
+              >
+                Verify your email
+              </Link>
+              .
+            </>
+          )}
+        </Alert>
+      )}
 
       <form className={styles.form} onSubmit={handleSubmit(onSubmit)} noValidate>
         <Field label="Email address" error={errors.email?.message} required>

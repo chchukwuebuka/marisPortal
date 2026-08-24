@@ -1,19 +1,22 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApplication } from "@/hooks/useApplication";
 import { SittingCard, StepActions, StepPanel } from "@/components/application";
 import { Alert, Checkbox } from "@/components/ui";
 import { stepNav } from "@/lib/flow";
-import { uid } from "@/services";
 import type { OLevelResult } from "@/types/domain";
 import type { OlevelSubjectFormValues } from "@/schemas";
 import styles from "./olevel.module.css";
 
+function generateTempId(prefix = "id"): string {
+  return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
 function newSitting(): OLevelResult {
   return {
-    id: uid("sit"),
+    id: generateTempId("sit"),
     examType: "" as OLevelResult["examType"],
     examNumber: "",
     examYear: 0,
@@ -24,8 +27,13 @@ function newSitting(): OLevelResult {
 
 export default function OlevelStep() {
   const router = useRouter();
-  const { application, setOlevel, setPresentingTwoSittings, stepStatus } =
-    useApplication();
+  const {
+    application,
+    setOlevel,
+    saveOlevel,
+    setPresentingTwoSittings,
+    stepStatus,
+  } = useApplication();
   const nav = stepNav("olevel");
 
   const olevel = application.olevel;
@@ -50,7 +58,7 @@ export default function OlevelStep() {
     setOlevel(
       olevel.map((s, i) =>
         i === index
-          ? { ...s, subjects: [...s.subjects, { id: uid("subj"), ...values }] }
+          ? { ...s, subjects: [...s.subjects, { id: generateTempId("subj"), ...values }] }
           : s,
       ),
     );
@@ -66,6 +74,20 @@ export default function OlevelStep() {
     );
   }
 
+  const [saving, setSaving] = useState(false);
+
+  async function handleContinue() {
+    setSaving(true);
+    try {
+      await saveOlevel(olevel);
+    } catch {
+      // Continue even if offline, data is in local provider
+    } finally {
+      setSaving(false);
+      router.push(nav.nextHref);
+    }
+  }
+
   return (
     <StepPanel
       title="O'Level Information"
@@ -73,7 +95,8 @@ export default function OlevelStep() {
       footer={
         <StepActions
           backHref={nav.prevHref}
-          onContinue={() => router.push(nav.nextHref)}
+          loading={saving}
+          onContinue={handleContinue}
           submitDisabled={!stepStatus.olevel}
         />
       }

@@ -275,6 +275,34 @@
   margin-bottom: 20px;
 }
 
+/* Link-styled button (e.g. "Resend email") for actions that aren't navigation. */
+.linkButton {
+  color: var(--color-primary);
+  font-weight: var(--fw-semibold);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: inherit;
+}
+
+.linkButton:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.linkButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.resendSent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-success);
+  font-weight: var(--fw-medium);
+}
+
 /* ---- Forgot-password success -------------------------------- */
 
 .sent {

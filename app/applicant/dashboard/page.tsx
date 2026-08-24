@@ -6,9 +6,9 @@ import {
   CalendarClock,
   Check,
   ChevronRight,
-  CreditCard,
 } from "lucide-react";
 import { useApplication } from "@/hooks/useApplication";
+import { useCatalogue } from "@/hooks/useCatalogue";
 import { PageHeader } from "@/components/layout";
 import {
   AppStatusTag,
@@ -23,14 +23,7 @@ import {
 import { cn } from "@/lib/cn";
 import { APPLICATION_STEPS, stepPath } from "@/lib/constants";
 import { getNextAction } from "@/lib/flow";
-import { formatDate, formatNaira } from "@/lib/format";
-import {
-  findActiveSession,
-  findDepartment,
-  findProgramme,
-  findSession,
-  invoiceTotal,
-} from "@/services";
+import { formatDate } from "@/lib/format";
 import styles from "./dashboard.module.css";
 
 function SummaryRow({
@@ -62,6 +55,8 @@ export default function DashboardPage() {
     paid,
     hydrated,
   } = useApplication();
+  const { findActiveSession, findDepartment, findProgramme, findSession } =
+    useCatalogue();
 
   if (!hydrated) {
     return <LoadingBlock label="Loading your application…" />;
@@ -72,7 +67,6 @@ export default function DashboardPage() {
   const department = findDepartment(application.programme?.departmentId);
   const session =
     findSession(application.programme?.sessionId) ?? findActiveSession();
-  const feeTotal = invoiceTotal();
   const totalSteps = APPLICATION_STEPS.length;
 
   return (
@@ -80,7 +74,7 @@ export default function DashboardPage() {
       <PageHeader
         eyebrow={`${session.name} Session`}
         title={`Welcome, ${applicant.firstName}`}
-        description="Complete each section, pay the application fee, then submit your application for review."
+        description="Complete each section, then submit your application for review."
       />
 
       <div className={styles.grid}>
@@ -170,35 +164,6 @@ export default function DashboardPage() {
           </Card>
 
           <Card>
-            <CardHeader
-              title="Application fee"
-              icon={<CreditCard size={18} />}
-            />
-            <CardBody className={styles.payCard}>
-              <p className={styles.feeAmount}>
-                <span>{formatNaira(feeTotal)}</span>
-              </p>
-              <StatusTag
-                tone={paid ? "success" : "warning"}
-                label={paid ? "Paid" : "Unpaid"}
-              />
-              {paid ? (
-                <Button href="/applicant/receipts" variant="outline" fullWidth>
-                  View receipt
-                </Button>
-              ) : (
-                <Button
-                  href="/applicant/payments"
-                  variant="secondary"
-                  fullWidth
-                >
-                  Pay application fee
-                </Button>
-              )}
-            </CardBody>
-          </Card>
-
-          <Card>
             <CardBody className={styles.deadline}>
               <span className={styles.deadlineIcon}>
                 <CalendarClock size={20} />
@@ -206,7 +171,9 @@ export default function DashboardPage() {
               <div>
                 <p className={styles.deadlineLabel}>Application deadline</p>
                 <p className={styles.deadlineDate}>
-                  {formatDate(session.applicationDeadline)}
+                  {session.applicationDeadline
+                    ? formatDate(session.applicationDeadline)
+                    : "—"}
                 </p>
               </div>
             </CardBody>

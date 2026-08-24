@@ -84,24 +84,6 @@
   flex-shrink: 0;
 }
 
-.remove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  color: var(--color-muted);
-  transition:
-    background var(--dur) var(--ease),
-    color var(--dur) var(--ease);
-}
-
-.remove:hover {
-  background: var(--color-error-soft);
-  color: var(--color-error);
-}
-
 .error {
   margin-top: 12px;
 }

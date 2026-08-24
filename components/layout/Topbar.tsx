@@ -1,13 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { LogOut, Menu } from "lucide-react";
 import { useApplication } from "@/hooks/useApplication";
+import { useAuth } from "@/hooks/useAuth";
 import { initials } from "@/lib/format";
 import styles from "./Topbar.module.css";
 
 export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const { applicant } = useApplication();
+  const { logout } = useAuth();
   const fullName = `${applicant.firstName} ${applicant.lastName}`;
 
   return (
@@ -34,9 +35,14 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
             <span className={styles.userEmail}>{applicant.email}</span>
           </span>
         </div>
-        <Link href="/login" className={styles.signOut} aria-label="Sign out">
+        <button
+          type="button"
+          onClick={() => void logout()}
+          className={styles.signOut}
+          aria-label="Sign out"
+        >
           <LogOut size={18} />
-        </Link>
+        </button>
       </div>
     </header>
   );

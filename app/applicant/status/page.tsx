@@ -1,14 +1,8 @@
 "use client";
 
-import {
-  ArrowRight,
-  CheckCircle2,
-  FlaskConical,
-  MessageSquareWarning,
-  RotateCcw,
-  XCircle,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useApplication } from "@/hooks/useApplication";
+import { useCatalogue } from "@/hooks/useCatalogue";
 import { PageHeader } from "@/components/layout";
 import { Timeline } from "@/components/application";
 import {
@@ -23,18 +17,11 @@ import {
 import { getNextAction } from "@/lib/flow";
 import { buildTimeline } from "@/lib/timeline";
 import { formatDate } from "@/lib/format";
-import { findProgramme } from "@/services";
 import styles from "./status.module.css";
 
 export default function StatusPage() {
-  const {
-    application,
-    stepStatus,
-    paid,
-    hydrated,
-    applyMockDecision,
-    resetApplication,
-  } = useApplication();
+  const { application, stepStatus, paid, hydrated } = useApplication();
+  const { findProgramme } = useCatalogue();
 
   if (!hydrated) {
     return <LoadingBlock label="Loading your application status…" />;
@@ -44,9 +31,6 @@ export default function StatusPage() {
   const events = buildTimeline(application);
   const next = getNextAction(application, stepStatus, paid);
   const programme = findProgramme(application.programme?.programmeId);
-  const canSimulate = ["submitted", "under_review", "approved"].includes(
-    status,
-  );
 
   return (
     <>
@@ -113,64 +97,6 @@ export default function StatusPage() {
               </Button>
             </CardBody>
           </Card>
-
-          {canSimulate && (
-            <Card className={styles.demoCard}>
-              <CardHeader
-                title="Simulate admissions office"
-                subtitle="Demo only — stands in for the reviewer dashboard."
-                icon={<FlaskConical size={18} />}
-              />
-              <CardBody className={styles.demoActions}>
-                <Button
-                  variant="secondary"
-                  fullWidth
-                  leftIcon={<CheckCircle2 size={16} />}
-                  onClick={() => applyMockDecision("admit")}
-                >
-                  Approve &amp; offer admission
-                </Button>
-                <Button
-                  variant="outline"
-                  fullWidth
-                  leftIcon={<MessageSquareWarning size={16} />}
-                  onClick={() =>
-                    applyMockDecision(
-                      "correction",
-                      "Please re-upload a clearer copy of your O'Level result.",
-                    )
-                  }
-                >
-                  Request correction
-                </Button>
-                <Button
-                  variant="ghost"
-                  fullWidth
-                  leftIcon={<XCircle size={16} />}
-                  onClick={() => applyMockDecision("reject")}
-                >
-                  Reject application
-                </Button>
-              </CardBody>
-            </Card>
-          )}
-
-          <button
-            type="button"
-            className={styles.reset}
-            onClick={() => {
-              if (
-                window.confirm(
-                  "Reset the entire application draft? This clears all saved progress (demo only).",
-                )
-              ) {
-                resetApplication();
-              }
-            }}
-          >
-            <RotateCcw size={13} />
-            Reset application (demo)
-          </button>
         </div>
       </div>
     </>

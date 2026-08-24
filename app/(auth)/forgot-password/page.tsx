@@ -6,7 +6,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowLeft, MailCheck, Send } from "lucide-react";
-import { Button, Field, Input } from "@/components/ui";
+import { Alert, Button, Field, Input } from "@/components/ui";
+import { requestPasswordReset } from "@/services/auth";
+import { ApiError } from "@/lib/api";
 import styles from "../auth.module.css";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -22,6 +24,7 @@ type ForgotValues = z.infer<typeof forgotSchema>;
 
 export default function ForgotPasswordPage() {
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -32,9 +35,17 @@ export default function ForgotPasswordPage() {
   });
 
   async function onSubmit(values: ForgotValues) {
-    // Mock: pretend to dispatch a reset email.
-    await new Promise((r) => setTimeout(r, 650));
-    setSentTo(values.email);
+    setFormError(null);
+    try {
+      await requestPasswordReset(values.email);
+      setSentTo(values.email);
+    } catch (err) {
+      setFormError(
+        err instanceof ApiError
+          ? err.message
+          : "We couldn't send the reset link. Please try again.",
+      );
+    }
   }
 
   if (sentTo) {
@@ -69,6 +80,11 @@ export default function ForgotPasswordPage() {
       </div>
 
       <form className={styles.form} onSubmit={handleSubmit(onSubmit)} noValidate>
+        {formError && (
+          <Alert tone="error" className={styles.demoNote}>
+            {formError}
+          </Alert>
+        )}
         <Field label="Email address" error={errors.email?.message} required>
           <Input
             type="email"

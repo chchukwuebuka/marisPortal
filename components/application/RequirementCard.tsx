@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, Trash2 } from "lucide-react";
+import { FileText } from "lucide-react";
 import type { DocumentRequirement } from "@/types/domain";
 import { useApplication } from "@/hooks/useApplication";
 import { Alert, Badge, DocStatusTag, FileUpload } from "@/components/ui";
@@ -13,8 +13,9 @@ export function RequirementCard({
 }: {
   requirement: DocumentRequirement;
 }) {
-  const { getDocument, uploadDocument, removeDocument } = useApplication();
+  const { getDocument, uploadDocument } = useApplication();
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const doc = getDocument(requirement.id);
   const typesLabel = requirement.allowedFileTypes
@@ -22,7 +23,7 @@ export function RequirementCard({
     .join(", ");
   const accept = requirement.allowedFileTypes.map((t) => `.${t}`).join(",");
 
-  function handleSelect(file: File) {
+  async function handleSelect(file: File) {
     setError(null);
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
     if (
@@ -36,12 +37,18 @@ export function RequirementCard({
       setError(`File is too large. Maximum size is ${requirement.maxFileSizeMb} MB.`);
       return;
     }
-    uploadDocument(requirement.id, {
-      fileName: file.name,
-      fileSizeBytes: file.size,
-      fileType: ext,
-      objectUrl: URL.createObjectURL(file),
-    });
+
+    console.log("REQUIREMENT:", requirement);
+    console.log("REQUIREMENT ID:", requirement.id);
+
+    setUploading(true);
+    try {
+      await uploadDocument(requirement.id, file);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to upload document.");
+    } finally {
+      setUploading(false);
+    }
   }
 
   return (
@@ -66,23 +73,18 @@ export function RequirementCard({
           <div className={styles.fileBody}>
             <p className={styles.fileName}>{doc.fileName}</p>
             <p className={styles.fileMeta}>
-              {formatBytes(doc.fileSizeBytes ?? 0)}
-              {doc.uploadedAt && <> · Uploaded {formatDateTime(doc.uploadedAt)}</>}
+              {[
+                doc.fileSizeBytes ? formatBytes(doc.fileSizeBytes) : null,
+                doc.uploadedAt
+                  ? `Uploaded ${formatDateTime(doc.uploadedAt)}`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </p>
           </div>
           <div className={styles.fileActions}>
             <DocStatusTag status={doc.status} />
-            <button
-              type="button"
-              className={styles.remove}
-              onClick={() => {
-                removeDocument(requirement.id);
-                setError(null);
-              }}
-              aria-label={`Remove ${requirement.name}`}
-            >
-              <Trash2 size={16} />
-            </button>
           </div>
         </div>
       )}

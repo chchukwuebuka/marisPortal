@@ -4,12 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  CreditCard,
+  // CreditCard,  // payment feature disabled for now
   FileText,
   GraduationCap,
   LayoutDashboard,
   ListChecks,
-  ReceiptText,
+  // ReceiptText,  // payment feature disabled for now
   X,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -30,8 +30,9 @@ const NAV: NavItem[] = [
     exact: true,
   },
   { label: "Application", href: "/applicant/application", icon: FileText },
-  { label: "Payments", href: "/applicant/payments", icon: CreditCard },
-  { label: "Receipts", href: "/applicant/receipts", icon: ReceiptText },
+  // Payment feature disabled for now:
+  // { label: "Payments", href: "/applicant/payments", icon: CreditCard },
+  // { label: "Receipts", href: "/applicant/receipts", icon: ReceiptText },
   { label: "Status", href: "/applicant/status", icon: ListChecks },
   { label: "Admission", href: "/applicant/admission", icon: GraduationCap },
 ];

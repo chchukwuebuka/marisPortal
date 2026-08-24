@@ -1,13 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { UserPlus } from "lucide-react";
-import { Button, Checkbox, Field, Input } from "@/components/ui";
-import { DRAFT_STORAGE_KEY } from "@/lib/constants";
+import { Alert, Button, Checkbox, Field, Input } from "@/components/ui";
+import { register as registerAccount } from "@/services/auth";
+import { ApiError } from "@/lib/api";
 import styles from "../auth.module.css";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -33,11 +35,22 @@ const registerSchema = z
 
 type RegisterValues = z.infer<typeof registerSchema>;
 
+/** Map DRF field-error keys back onto the form's field names. */
+const FIELD_MAP: Record<string, keyof RegisterValues> = {
+  email: "email",
+  password: "password",
+  password2: "confirmPassword",
+  first_name: "firstName",
+  last_name: "lastName",
+};
+
 export default function RegisterPage() {
   const router = useRouter();
+  const [formError, setFormError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
@@ -52,15 +65,35 @@ export default function RegisterPage() {
   });
 
   async function onSubmit(values: RegisterValues) {
-    // Clear any existing application draft so the new user starts fresh
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+    setFormError(null);
+    try {
+      await registerAccount({
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.email,
+        password: values.password,
+        password2: values.confirmPassword,
+      });
+      const searchParams = new URLSearchParams({ email: values.email });
+      router.push(`/verify?${searchParams.toString()}`);
+    } catch (err) {
+      if (err instanceof ApiError && err.fields) {
+        let mappedAny = false;
+        for (const [key, messages] of Object.entries(err.fields)) {
+          const field = FIELD_MAP[key];
+          if (field && messages.length) {
+            setError(field, { message: messages.join(" ") });
+            mappedAny = true;
+          }
+        }
+        if (mappedAny) return;
+      }
+      setFormError(
+        err instanceof ApiError
+          ? err.message
+          : "We couldn't create your account. Please try again.",
+      );
     }
-    
-    // Mock registration: delay, then go to verification.
-    await new Promise((r) => setTimeout(r, 700));
-    const searchParams = new URLSearchParams({ email: values.email });
-    router.push(`/verify?${searchParams.toString()}`);
   }
 
   return (
@@ -71,6 +104,12 @@ export default function RegisterPage() {
           Register to start your application to Marist Polytechnic.
         </p>
       </div>
+
+      {formError && (
+        <Alert tone="error" className={styles.demoNote}>
+          {formError}
+        </Alert>
+      )}
 
       <form className={styles.form} onSubmit={handleSubmit(onSubmit)} noValidate>
         <div className={styles.row}>

@@ -2,18 +2,19 @@
 
 import { useRouter } from "next/navigation";
 import { useApplication } from "@/hooks/useApplication";
+import { useCatalogue } from "@/hooks/useCatalogue";
 import { RequirementCard, StepActions, StepPanel } from "@/components/application";
 import { Alert } from "@/components/ui";
 import { stepNav } from "@/lib/flow";
-import { getRequirementsSync } from "@/services";
 import styles from "./documents.module.css";
 
 export default function DocumentsStep() {
   const router = useRouter();
   const { application, stepStatus } = useApplication();
+  const { getRequirementsForProgramme } = useCatalogue();
   const nav = stepNav("documents");
 
-  const requirements = getRequirementsSync(application.programme?.programmeId);
+  const requirements = getRequirementsForProgramme(application.programme?.programmeId);
   const required = requirements.filter((r) => r.required);
   const uploadedRequired = required.filter((r) =>
     application.documents.some(

@@ -22,7 +22,8 @@ export const DOCUMENT_STATUSES = [
 ] as const;
 export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number];
 
-export const EXAM_TYPES = ["WAEC", "NECO", "NABTEB"] as const;
+// Mirrors the API's O'Level exam types (includes GCE).
+export const EXAM_TYPES = ["WAEC", "NECO", "NABTEB", "GCE"] as const;
 export type ExamType = (typeof EXAM_TYPES)[number];
 
 /** WAEC/NECO grading scale, best (A1) to worst (F9). */
@@ -53,7 +54,8 @@ export const MARITAL_STATUSES = [
 ] as const;
 export type MaritalStatus = (typeof MARITAL_STATUSES)[number];
 
-export const PROGRAMME_LEVELS = ["ND", "HND"] as const;
+// Mirrors the API's programme types (ND / HND / Certificate).
+export const PROGRAMME_LEVELS = ["ND", "HND", "CERT"] as const;
 export type ProgrammeLevel = (typeof PROGRAMME_LEVELS)[number];
 
 export const JAMB_EXAM_TYPES = ["UTME", "Direct Entry"] as const;

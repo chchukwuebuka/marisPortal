@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useApplication } from "@/hooks/useApplication";
+import { useCatalogue } from "@/hooks/useCatalogue";
 import {
   ReviewRow,
   ReviewSection,
@@ -16,19 +17,19 @@ import {
   stepPath,
 } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
-import {
-  findDepartment,
-  findProgramme,
-  findSchool,
-  findSession,
-  getRequirementsSync,
-} from "@/services";
 import styles from "./review.module.css";
 
 export default function ReviewStep() {
   const router = useRouter();
   const { application, stepStatus, getDocument, setConfirmedAccuracy } =
     useApplication();
+  const {
+    findDepartment,
+    findProgramme,
+    findSchool,
+    findSession,
+    getRequirementsForProgramme,
+  } = useCatalogue();
   const nav = stepNav("review");
 
   const p = application.personal ?? {};
@@ -40,7 +41,7 @@ export default function ReviewStep() {
     .filter(Boolean)
     .join(" ");
   const programme = findProgramme(prog.programmeId);
-  const requirements = getRequirementsSync(prog.programmeId);
+  const requirements = getRequirementsForProgramme(prog.programmeId);
 
   return (
     <StepPanel

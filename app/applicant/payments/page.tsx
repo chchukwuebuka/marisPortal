@@ -13,11 +13,11 @@ import {
   LoadingBlock,
 } from "@/components/ui";
 import { formatDateTime, formatNaira } from "@/lib/format";
-import { buildInvoiceItems, createInvoice, payInvoice } from "@/services";
+import { initializePayment } from "@/services/payments";
 import styles from "./payments.module.css";
 
 export default function PaymentsPage() {
-  const { application, payment, paid, setPayment, hydrated } = useApplication();
+  const { application, payment, paid, hydrated } = useApplication();
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,22 +25,18 @@ export default function PaymentsPage() {
     return <LoadingBlock label="Loading payment details…" />;
   }
 
-  const items = buildInvoiceItems();
-  const total = items.reduce((sum, i) => sum + i.amount, 0);
+  const feeAmount = 10500; // Standard application fee + processing
 
   async function handlePay() {
     setError(null);
     setProcessing(true);
     try {
-      const invoice = await createInvoice(
-        application.id,
-        application.applicationNumber,
-      );
-      const result = await payInvoice(invoice);
-      setPayment(result);
+      const init = await initializePayment(application.id);
+      if (init.authorizationUrl) {
+        window.location.href = init.authorizationUrl;
+      }
     } catch {
-      setError("We couldn't complete your payment. Please try again.");
-    } finally {
+      setError("We couldn't initialize your payment. Please try again.");
       setProcessing(false);
     }
   }
@@ -106,29 +102,30 @@ export default function PaymentsPage() {
         <Card>
           <CardHeader
             title="Application fee invoice"
-            subtitle="Marist Polytechnic — 2026/2027 admissions"
+            subtitle="Marist Polytechnic Admissions"
             icon={<CreditCard size={18} />}
           />
           <CardBody>
             <ul className={styles.items}>
-              {items.map((item) => (
-                <li key={item.label} className={styles.item}>
-                  <span>{item.label}</span>
-                  <span className={styles.mono}>{formatNaira(item.amount)}</span>
-                </li>
-              ))}
+              <li className={styles.item}>
+                <span>Application Fee</span>
+                <span className={styles.mono}>{formatNaira(10000)}</span>
+              </li>
+              <li className={styles.item}>
+                <span>Processing Fee</span>
+                <span className={styles.mono}>{formatNaira(500)}</span>
+              </li>
               <li className={styles.total}>
                 <span>Total</span>
-                <span className={styles.mono}>{formatNaira(total)}</span>
+                <span className={styles.mono}>{formatNaira(feeAmount)}</span>
               </li>
             </ul>
 
             <div className={styles.secureNote}>
               <ShieldCheck size={16} />
               <span>
-                Payment is processed by a secure gateway and verified on our
-                server before your account is credited. This is a simulated
-                gateway for this demo — no real charge is made.
+                Payment is processed securely via Paystack and verified on our
+                server before your account is credited.
               </span>
             </div>
 
@@ -145,8 +142,8 @@ export default function PaymentsPage() {
               leftIcon={<Lock size={16} />}
             >
               {processing
-                ? "Contacting payment gateway…"
-                : `Pay ${formatNaira(total)}`}
+                ? "Redirecting to payment gateway…"
+                : `Pay ${formatNaira(feeAmount)}`}
             </Button>
           </CardBody>
         </Card>

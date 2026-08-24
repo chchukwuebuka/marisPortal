@@ -1,5 +1,7 @@
 import { ApplicationProvider } from "@/providers/ApplicationProvider";
+import { CatalogueProvider } from "@/providers/CatalogueProvider";
 import { AppShell } from "@/components/layout";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 
 export default function ApplicantLayout({
   children,
@@ -7,8 +9,12 @@ export default function ApplicantLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ApplicationProvider>
-      <AppShell>{children}</AppShell>
-    </ApplicationProvider>
+    <AuthGuard>
+      <CatalogueProvider>
+        <ApplicationProvider>
+          <AppShell>{children}</AppShell>
+        </ApplicationProvider>
+      </CatalogueProvider>
+    </AuthGuard>
   );
 }
