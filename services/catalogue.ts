@@ -27,6 +27,7 @@ export interface ApiProgramme {
   type?: string; // 'ND' | 'HND' | 'BSC' | 'BENG'
   option?: string | null; // e.g. "Cybersecurity Option"
   duration_years?: number;
+  cutoff_mark?: number | null;
   application_fee?: string;
   processing_fee?: string;
   total_fee?: string;

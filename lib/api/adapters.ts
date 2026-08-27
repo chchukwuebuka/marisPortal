@@ -229,6 +229,7 @@ export function toDomainProgramme(p: any): Programme {
     code: p.code || p.short_code || "",
     durationYears: typeof p.duration_years === "number" ? p.duration_years : 2,
     acceptingApplications: accepting,
+    cutoffMark: typeof p.cutoff_mark === "number" ? p.cutoff_mark : (typeof p.cutoffMark === "number" ? p.cutoffMark : null),
   };
 }
 

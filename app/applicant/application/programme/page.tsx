@@ -189,7 +189,7 @@ export default function ProgrammeStep() {
               onChange={handleProgrammeChange}
               options={availableProgrammes.map((prog) => ({
                 value: prog.id,
-                label: `${prog.level} ${prog.name}${prog.option ? ` (${prog.option})` : ""}`,
+                label: `${prog.level} ${prog.name}${prog.option ? ` (${prog.option})` : ""}${prog.cutoffMark ? ` (Cut-Off: ${prog.cutoffMark})` : ""}`,
                 disabled: !prog.acceptingApplications,
               }))}
             />
@@ -244,7 +244,21 @@ export default function ProgrammeStep() {
                 </div>
               </div>
             )}
-          </div>
+          
+            {selectedProgramme.cutoffMark != null && (
+              <div className={styles.detailItem}>
+                <span className={styles.detailIcon}>
+                  🎯
+                </span>
+                <div>
+                  <p className={styles.detailLabel}>Minimum UTME Cut-Off</p>
+                  <p className={styles.detailValue} style={{ fontWeight: 700, color: "#274088" }}>
+                    {selectedProgramme.cutoffMark} Aggregate
+                  </p>
+                </div>
+              </div>
+            )}
+            </div>
         )}
 
         {error && (
@@ -254,6 +268,18 @@ export default function ProgrammeStep() {
             </Alert>
           </div>
         )}
+
+        {selectedProgramme?.cutoffMark != null &&
+          application.jamb?.score != null &&
+          application.jamb.score < selectedProgramme.cutoffMark && (
+            <div className={styles.alertWrap}>
+              <Alert tone="warning" title="Score Below Programme Cut-Off">
+                Your JAMB score of {application.jamb.score} is below the minimum
+                cut-off mark ({selectedProgramme.cutoffMark}) for {selectedProgramme.name}.
+                You will be required to choose an alternative qualifying course before final submission.
+              </Alert>
+            </div>
+          )}
 
         {notAccepting && (
           <div className={styles.alertWrap}>

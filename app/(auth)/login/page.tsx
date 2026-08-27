@@ -51,7 +51,12 @@ export default function LoginPage() {
           ? err.message
           : "We couldn't sign you in. Please try again.";
       // A common cause is an unverified email — offer a way forward.
-      if (/verif/i.test(message)) setUnverifiedEmail(values.email);
+      if (
+        (err instanceof ApiError && err.code === "email_not_verified") ||
+        /verif/i.test(message)
+      ) {
+        setUnverifiedEmail(values.email);
+      }
       setFormError(message);
     }
   }

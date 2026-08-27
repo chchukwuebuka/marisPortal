@@ -46,6 +46,7 @@ export interface Programme {
   applicationFee?: string;
   totalFee?: string;
   acceptingApplications: boolean;
+  cutoffMark?: number | null;
 }
 
 /* ---- Application sections (§3–9) ----------------------------- */

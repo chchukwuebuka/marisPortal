@@ -127,6 +127,7 @@ export function CatalogueProvider({
                     code: `${d.code || ""}-${level}`,
                     option: p.option || null,
                     durationYears: p.duration_years ?? 2,
+                    cutoffMark: typeof p.cutoff_mark === "number" ? p.cutoff_mark : null,
                     applicationFee: p.application_fee,
                     totalFee: p.total_fee,
                     acceptingApplications: true,
