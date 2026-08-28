@@ -22,6 +22,10 @@ export const metadata: Metadata = {
   },
   description:
     "Apply for admission to Marist Polytechnic. Complete your application, upload documents, pay your fee, and track your admission status.",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export const viewport = {
