@@ -213,9 +213,25 @@ export default function ReviewStep() {
           <ReviewRow label="Exam type" value={j.examType} />
           <ReviewRow label="Exam year" value={j.examYear || undefined} />
           <ReviewRow
-            label="Score"
+            label="Total score"
             value={typeof j.score === "number" ? `${j.score} / 400` : undefined}
           />
+          {j.subjects && j.subjects.length > 0 && (
+            <ReviewRow
+              label="UTME Subjects"
+              wide
+              value={
+                <div className={styles.subjects}>
+                  {j.subjects.map((sub, i) => (
+                    <span key={sub.id || i} className={styles.subjectPill}>
+                      {sub.subject}
+                      <strong>{sub.score}</strong>
+                    </span>
+                  ))}
+                </div>
+              }
+            />
+          )}
           <ReviewRow
             label="First choice institution"
             value={j.firstChoiceInstitution}

@@ -98,6 +98,26 @@ export const OLEVEL_SUBJECTS: string[] = [
   "Hausa",
 ];
 
+export const UTME_SUBJECTS = [
+  "Use of English",
+  "Mathematics",
+  "Physics",
+  "Chemistry",
+  "Biology",
+  "Agricultural Science",
+  "Economics",
+  "Commerce",
+  "Government",
+  "Literature in English",
+  "CRK (Christian Religious Knowledge)",
+  "IRK (Islamic Religious Knowledge)",
+  "Geography",
+  "History",
+  "Accounting / Principles of Accounts",
+  "Civic Education",
+  "Computer Studies",
+] as const;
+
 export const NIGERIAN_STATES: string[] = [
   "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue",
   "Borno", "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu",

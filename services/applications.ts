@@ -7,12 +7,13 @@
  * route uses `{application_id}` — both are the same server-owned integer.
  */
 
-import { api } from "@/lib/api";
+import { api, API_BASE_URL, getAccessToken } from "@/lib/api";
 import { educationToRequest, olevelToRequest } from "@/lib/api/adapters";
 import type {
   ApiApplicationCreate,
   ApiApplicationDetail,
   ApiApplicationList,
+  ApiCutoffCheckResponse,
   ApiEducationalBackground,
   ApiOLevelResult,
   ApiStatusHistory,
@@ -152,6 +153,11 @@ export async function putJamb(
   return parseJamb(raw);
 }
 
+/** POST /applications/{id}/check-cutoff/ — check cut-off mark and get suggestions. */
+export function checkCutoff(appId: number | string): Promise<ApiCutoffCheckResponse> {
+  return api.post<ApiCutoffCheckResponse>(`${base(appId)}/check-cutoff/`);
+}
+
 function jambToRequest(d: Partial<JambInfo>): Record<string, unknown> {
   const body: Record<string, unknown> = {};
   if (d.registrationNumber !== undefined)
@@ -162,6 +168,12 @@ function jambToRequest(d: Partial<JambInfo>): Record<string, unknown> {
   if (d.firstChoiceInstitution !== undefined)
     body.first_choice_institution = d.firstChoiceInstitution;
   if (d.courseApplied !== undefined) body.course_applied = d.courseApplied;
+  if (Array.isArray(d.subjects)) {
+    body.subjects = d.subjects.map((s) => ({
+      subject: s.subject,
+      score: Number(s.score),
+    }));
+  }
   return body;
 }
 
@@ -184,6 +196,13 @@ function parseJamb(raw: unknown): Partial<JambInfo> | null {
   if (inst !== undefined) out.firstChoiceInstitution = inst;
   const course = str(o.course_applied);
   if (course !== undefined) out.courseApplied = course;
+  if (Array.isArray(o.subjects)) {
+    out.subjects = o.subjects.map((sub: any) => ({
+      id: sub.id ? String(sub.id) : undefined,
+      subject: String(sub.subject || ""),
+      score: Number(sub.score || 0),
+    }));
+  }
   return out;
 }
 
@@ -218,4 +237,41 @@ export async function getTimeline(appId: number): Promise<ApiStatusHistory[]> {
 /** GET /applications/{id}/admission-letter/ — raw response (shape TBD live). */
 export function getAdmissionLetter(appId: number): Promise<unknown> {
   return api.get<unknown>(`${base(appId)}/admission-letter/`);
+}
+
+/** Download the official PDF admission letter from the API */
+export async function downloadAdmissionLetter(
+  appId: number | string,
+  filename?: string,
+): Promise<void> {
+  const token = getAccessToken();
+  const url = `${API_BASE_URL}/applications/${appId}/admission-letter/`;
+  const res = await fetch(url, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      Accept: "application/pdf, application/json, */*",
+    },
+  });
+
+  if (!res.ok) {
+    let errorDetail = `Status ${res.status}`;
+    try {
+      const json = await res.json();
+      if (json.detail) errorDetail = json.detail;
+      else if (json.message) errorDetail = json.message;
+    } catch {
+      // ignore
+    }
+    throw new Error(`Failed to download admission letter: ${errorDetail}`);
+  }
+
+  const blob = await res.blob();
+  const blobUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = filename || `admission-letter-${appId}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
 }

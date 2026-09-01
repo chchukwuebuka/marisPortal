@@ -104,6 +104,12 @@ export interface OLevelResult {
   subjects: OLevelSubject[];
 }
 
+export interface JambSubjectScore {
+  id?: string;
+  subject: string;
+  score: number;
+}
+
 export interface JambInfo {
   registrationNumber: string;
   examYear: number;
@@ -111,6 +117,7 @@ export interface JambInfo {
   examType: JambExamType;
   firstChoiceInstitution: string;
   courseApplied: string;
+  subjects?: JambSubjectScore[];
 }
 
 /* ---- Documents (§10–12) — reusable, admin-configured --------- */

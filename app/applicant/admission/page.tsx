@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import {
   ArrowRight,
   CheckCircle2,
+  Download,
   GraduationCap,
   Info,
   Printer,
@@ -20,6 +22,7 @@ import {
   CardBody,
   LoadingBlock,
 } from "@/components/ui";
+import { downloadAdmissionLetter } from "@/services/applications";
 import { cn } from "@/lib/cn";
 import { formatDate } from "@/lib/format";
 import styles from "./admission.module.css";
@@ -94,12 +97,33 @@ export default function AdmissionPage() {
     declineAdmission,
   } = useApplication();
 
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
   if (!hydrated) {
     return <LoadingBlock label="Loading your admission status…" />;
   }
 
   const { status, decision } = application;
   const fullName = `${applicant.firstName} ${applicant.lastName}`;
+
+  const handleDownload = async () => {
+    try {
+      setDownloading(true);
+      setDownloadError(null);
+      await downloadAdmissionLetter(
+        application.id,
+        `admission-letter-${application.applicationNumber || application.id}.pdf`,
+      );
+    } catch (err) {
+      console.error("PDF download error:", err);
+      setDownloadError(
+        "Direct PDF download was unavailable. You can use the Print letter button below to view/print or save as PDF.",
+      );
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   // --- No offer to show -------------------------------------------------
   if (status === "rejected") {
@@ -166,17 +190,37 @@ export default function AdmissionPage() {
         title="Admission Letter"
         description="Your official offer of provisional admission to Marist Polytechnic."
         actions={
-          accepted ? (
-            <Button
-              variant="outline"
-              leftIcon={<Printer size={16} />}
-              onClick={() => window.print()}
-            >
-              Print letter
-            </Button>
+          accepted || status === "admitted" ? (
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <Button
+                variant="primary"
+                leftIcon={<Download size={16} />}
+                onClick={handleDownload}
+                loading={downloading}
+              >
+                Download PDF
+              </Button>
+              <Button
+                variant="outline"
+                leftIcon={<Printer size={16} />}
+                onClick={() => window.print()}
+              >
+                Print letter
+              </Button>
+            </div>
           ) : undefined
         }
       />
+
+      {downloadError && (
+        <Alert
+          tone="warning"
+          title="Notice"
+          className={styles.banner}
+        >
+          {downloadError}
+        </Alert>
+      )}
 
       {status === "admitted" && (
         <Card className={styles.offerCard}>
@@ -203,6 +247,14 @@ export default function AdmissionPage() {
                 onClick={() => acceptAdmission()}
               >
                 Accept admission
+              </Button>
+              <Button
+                variant="outline"
+                leftIcon={<Download size={18} />}
+                onClick={handleDownload}
+                loading={downloading}
+              >
+                Download PDF
               </Button>
               <Button
                 variant="outline"

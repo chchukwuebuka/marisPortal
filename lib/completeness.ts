@@ -53,12 +53,21 @@ export function isOlevelComplete(a: Application): boolean {
 
 export function isJambComplete(a: Application): boolean {
   const j = a.jamb ?? {};
-  return Boolean(
-    j.registrationNumber &&
-      j.examYear &&
-      typeof j.score === "number" &&
-      j.examType,
-  );
+  if (!j.registrationNumber || !j.examYear || !j.examType) return false;
+  if (Array.isArray(j.subjects) && j.subjects.length === 4) {
+    const subjects = j.subjects.map((s) => s.subject?.trim().toLowerCase() || "");
+    const hasEnglish = subjects.some(
+      (s) =>
+        s === "use of english" ||
+        s === "english" ||
+        s === "english language",
+    );
+    const validScores = j.subjects.every(
+      (s) => typeof s.score === "number" && s.score >= 0 && s.score <= 100,
+    );
+    return hasEnglish && validScores;
+  }
+  return typeof j.score === "number" && j.score > 0;
 }
 
 /**

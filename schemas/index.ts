@@ -12,4 +12,11 @@ export {
   type OlevelSubjectFormValues,
   type OlevelSittingFormValues,
 } from "./olevel";
-export { jambSchema, type JambInput, type JambFormValues } from "./jamb";
+export {
+  jambSchema,
+  jambSubjectScoreSchema,
+  type JambInput,
+  type JambFormValues,
+  type JambSubjectInput,
+  type JambSubjectFormValues,
+} from "./jamb";

@@ -199,6 +199,40 @@ export interface ApiOLevelResult {
   subjects: ApiOLevelSubject[];
 }
 
+export interface ApiJambSubject {
+  id?: number;
+  subject: string;
+  score: number;
+}
+
+export interface ApiJambRecord {
+  id?: number;
+  registration_number: string;
+  exam_year: number;
+  exam_type: string;
+  first_choice_institution?: string;
+  course_applied?: string;
+  score?: number;
+  subjects: ApiJambSubject[];
+}
+
+export interface ApiCutoffCheckSuggestion {
+  id: number;
+  name: string;
+  code: string;
+  programme_type: string;
+  cutoff_mark: number;
+}
+
+export interface ApiCutoffCheckResponse {
+  eligible: boolean;
+  cutoff_mark: number;
+  student_score: number;
+  programme_name: string;
+  message: string;
+  suggestions: ApiCutoffCheckSuggestion[];
+}
+
 export interface ApiStatusHistory {
   id: number;
   status: ApiApplicationStatus;
@@ -215,6 +249,25 @@ export interface ApiCorrectionRequest {
   resolved: boolean;
   resolved_at: string | null;
   created_at: string;
+}
+
+export interface ApiAdmissionDecision {
+  id: number;
+  decision: string;
+  decision_display?: string;
+  programme?: number | null;
+  programme_name?: string | null;
+  admission_type?: string;
+  conditions?: string;
+  remarks?: string;
+  verification_code?: string;
+  decided_by_email?: string | null;
+  decided_at?: string;
+  admission_letter?: {
+    id: number;
+    file_url?: string | null;
+    reference_number?: string;
+  } | null;
 }
 
 export interface ApiApplicationDetail {
@@ -238,6 +291,7 @@ export interface ApiApplicationDetail {
   jamb: string | null;
   status_history: ApiStatusHistory[];
   correction_requests: ApiCorrectionRequest[];
+  admission_decision?: ApiAdmissionDecision | null;
 }
 
 /* ---- Documents ----------------------------------------------- */

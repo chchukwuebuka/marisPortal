@@ -239,7 +239,48 @@ export function ApplicationProvider({
             ? detail.correction_requests[detail.correction_requests.length - 1]
                 .message
             : null,
-        decision: null,
+        decision: detail.admission_decision
+          ? {
+              id: String(detail.admission_decision.id),
+              applicationId: String(detail.id),
+              programmeName:
+                detail.admission_decision.programme_name ||
+                detail.programme_detail?.name ||
+                "Selected Programme",
+              departmentName:
+                detail.programme_detail?.department_name || "Department",
+              schoolName: detail.programme_detail?.school_name || "School",
+              sessionName: detail.session_name || "Current Session",
+              admissionType:
+                detail.admission_decision.admission_type ||
+                "Provisional Admission",
+              decisionDate:
+                detail.admission_decision.decided_at ||
+                detail.updated_at ||
+                new Date().toISOString(),
+              conditions: detail.admission_decision.conditions || "",
+              verificationCode:
+                detail.admission_decision.verification_code ||
+                `MP-${detail.application_number || detail.id}`,
+              accepted: detail.status === "accepted",
+            }
+          : ["admitted", "accepted"].includes(detail.status)
+          ? {
+              id: String(detail.id),
+              applicationId: String(detail.id),
+              programmeName:
+                detail.programme_detail?.name || "Selected Programme",
+              departmentName:
+                detail.programme_detail?.department_name || "Department",
+              schoolName: detail.programme_detail?.school_name || "School",
+              sessionName: detail.session_name || "Current Session",
+              admissionType: "Provisional Admission",
+              decisionDate: detail.updated_at || new Date().toISOString(),
+              conditions: "",
+              verificationCode: `MP-${detail.application_number || detail.id}`,
+              accepted: detail.status === "accepted",
+            }
+          : null,
         createdAt: detail.created_at,
         updatedAt: detail.updated_at,
         submittedAt: detail.submitted_at ?? undefined,
