@@ -60,3 +60,25 @@ export function formatBytes(bytes: number): string {
   const rounded = i === 0 ? value : Math.round(value * 10) / 10;
   return `${rounded} ${units[i]}`;
 }
+
+/** Resolve a relative or absolute media URL against the API backend host. */
+export function resolveMediaUrl(path?: string | null): string | undefined {
+  if (!path || typeof path !== "string") return undefined;
+  const trimmed = path.trim();
+  if (!trimmed) return undefined;
+  if (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("blob:") ||
+    trimmed.startsWith("data:")
+  ) {
+    return trimmed;
+  }
+  const rawBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+  const hostBase = rawBase.replace(/\/api\/?$/, "").replace(/\/+$/, "");
+  const normalized = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  const finalPath = normalized.startsWith("/media/")
+    ? normalized
+    : `/media${normalized}`;
+  return `${hostBase}${finalPath}`;
+}

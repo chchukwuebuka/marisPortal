@@ -43,8 +43,12 @@ export default function LoginPage() {
     setFormError(null);
     setUnverifiedEmail(null);
     try {
-      await login(values.email, values.password);
-      router.replace("/applicant/dashboard");
+      const u = await login(values.email, values.password);
+      if (u.role === "student") {
+        router.replace("/student/dashboard");
+      } else {
+        router.replace("/applicant/dashboard");
+      }
     } catch (err) {
       const message =
         err instanceof ApiError

@@ -24,7 +24,11 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 /** Pull an ApplicationDocument off a requirement row, if one is nested there. */
 function nestedDocument(row: Record<string, unknown>): ApiApplicationDocument | null {
   const doc = row.document ?? row.uploaded_document ?? row.application_document;
-  return isRecord(doc) ? (doc as unknown as ApiApplicationDocument) : null;
+  if (isRecord(doc)) return doc as unknown as ApiApplicationDocument;
+  if (typeof row.file_url === "string" || typeof row.file === "string") {
+    return row as unknown as ApiApplicationDocument;
+  }
+  return null;
 }
 
 function normalize(raw: unknown): {
@@ -36,7 +40,8 @@ function normalize(raw: unknown): {
     const docs: ApiApplicationDocument[] = [];
     for (const item of raw) {
       if (!isRecord(item)) continue;
-      reqs.push(item as unknown as ApiDocumentRequirement);
+      const reqObj = isRecord(item.requirement) ? item.requirement : item;
+      reqs.push(reqObj as unknown as ApiDocumentRequirement);
       const doc = nestedDocument(item);
       if (doc) docs.push(doc);
     }

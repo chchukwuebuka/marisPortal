@@ -277,14 +277,38 @@ export default function AdmissionPage() {
       )}
 
       {accepted && (
-        <Alert
-          tone="success"
-          title="Admission accepted"
-          className={styles.banner}
-        >
-          You have accepted your offer of admission. You are now ready for Phase
-          2 registration — keep this letter for your records.
-        </Alert>
+        <div style={{
+          background: "linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)",
+          color: "#ffffff",
+          borderRadius: "12px",
+          padding: "1.5rem 2rem",
+          marginBottom: "1.5rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "1rem",
+          boxShadow: "0 6px 20px rgba(30, 58, 138, 0.2)"
+        }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
+              <CheckCircle2 size={22} style={{ color: "#4ade80" }} />
+              <h3 style={{ fontSize: "1.125rem", fontWeight: 700, margin: 0, color: "#ffffff" }}>
+                Admission Accepted — Welcome to Marist Polytechnic!
+              </h3>
+            </div>
+            <p style={{ margin: 0, fontSize: "0.875rem", color: "#bfdbfe" }}>
+              Your student dossier and matriculation number have been generated. You may now access the Student Portal for course registration and academic records.
+            </p>
+          </div>
+          <Button
+            href="/student/dashboard"
+            variant="secondary"
+            rightIcon={<ArrowRight size={16} />}
+          >
+            Enter Student Portal
+          </Button>
+        </div>
       )}
 
       {declined && (

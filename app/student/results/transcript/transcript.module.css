@@ -1,0 +1,262 @@
+/* Official Academic Transcript (Form SMS-TR01) Styles */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1rem 0 4rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.actionBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 8px;
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e40af;
+  text-decoration: none;
+}
+
+.printBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  background: #1e40af;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.printBtn:hover {
+  background: #1e3a8a;
+}
+
+.transcriptSheet {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 2.5rem 3rem;
+  color: #0f172a;
+  position: relative;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.header {
+  text-align: center;
+  border-bottom: 2px solid #0f172a;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.instName {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #1e3a8a;
+  margin: 0 0 0.25rem;
+}
+
+.tagline {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: #475569;
+  margin: 0 0 0.4rem;
+}
+
+.office {
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #0f172a;
+  margin: 0 0 0.25rem;
+}
+
+.docTitle {
+  display: inline-block;
+  font-size: 1.15rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #991b1b;
+  border-top: 1px solid #991b1b;
+  border-bottom: 1px solid #991b1b;
+  padding: 0.25rem 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.studentMetaGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 2rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  background: #f8fafc;
+}
+
+.metaRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.metaLabel {
+  font-weight: 700;
+  color: #475569;
+  min-width: 140px;
+}
+
+.metaVal {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.semesterSection {
+  margin-bottom: 1.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.semesterHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f1f5f9;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #cbd5e1;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.table th {
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #cbd5e1;
+  font-weight: 700;
+  color: #475569;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.table td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.semesterSummaryBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  border-top: 1px solid #cbd5e1;
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.overallCard {
+  border: 2px solid #1e3a8a;
+  border-radius: 6px;
+  padding: 1.25rem;
+  background: #eff6ff;
+  margin-bottom: 1.75rem;
+}
+
+.overallGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  text-align: center;
+}
+
+.overallItemTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #475569;
+  margin-bottom: 0.25rem;
+}
+
+.overallItemVal {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #1e3a8a;
+}
+
+.footerSignatures {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px dashed #cbd5e1;
+}
+
+.signBox {
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+.signLine {
+  width: 220px;
+  border-bottom: 1px solid #0f172a;
+  margin-bottom: 0.35rem;
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+  }
+
+  .actionBar {
+    display: none !important;
+  }
+
+  .transcriptSheet {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .container {
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+}

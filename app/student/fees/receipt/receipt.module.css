@@ -1,0 +1,287 @@
+/* Official Student Fee Receipt Styles (Form SMS-FR01) */
+.pageContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2rem 1rem 4rem;
+}
+
+.actionToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 800px;
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-ink);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.printBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--color-primary);
+  color: #ffffff;
+  padding: 0.6rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(30, 58, 138, 0.2);
+}
+
+.receiptCard {
+  width: 100%;
+  max-width: 800px;
+  background: #ffffff;
+  border: 2px solid #1e3a8a;
+  border-radius: 12px;
+  padding: 2.5rem 3rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+  position: relative;
+  color: #0f172a;
+  font-family: inherit;
+}
+
+/* Formal Header */
+.receiptHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid #1e3a8a;
+  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.headerText {
+  text-align: center;
+  flex: 1;
+}
+
+.institutionName {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1e3a8a;
+  letter-spacing: 0.03em;
+  margin: 0 0 0.25rem;
+  text-transform: uppercase;
+}
+
+.subHeader {
+  font-size: 0.8125rem;
+  color: #475569;
+  margin: 0 0 0.5rem;
+  font-weight: 500;
+}
+
+.receiptTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #f0fdf4;
+  display: inline-block;
+  padding: 0.25rem 1rem;
+  border: 1px solid #86efac;
+  border-radius: 4px;
+}
+
+/* Metadata Bar */
+.metaBar {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+}
+
+.metaItem {
+  display: flex;
+  justify-content: space-between;
+}
+
+.metaItemLabel {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.metaItemVal {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Student Information Grid */
+.sectionHeading {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.studentGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem 1.5rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 1.25rem;
+}
+
+.gridRow {
+  display: flex;
+  justify-content: space-between;
+}
+
+.gridLabel {
+  color: #64748b;
+}
+
+.gridValue {
+  font-weight: 600;
+  color: #0f172a;
+  text-align: right;
+}
+
+/* Table */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+}
+
+.table th {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: #334155;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.table td {
+  border: 1px solid #cbd5e1;
+  padding: 0.6rem 0.75rem;
+  color: #0f172a;
+}
+
+/* Ledger Summary Box */
+.ledgerBox {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.ledgerRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.35rem 0;
+  font-size: 0.9rem;
+}
+
+.ledgerTotalRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.6rem 0 0.2rem;
+  margin-top: 0.5rem;
+  border-top: 2px dashed #94a3b8;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1e3a8a;
+}
+
+/* Signatures & Seal */
+.footerArea {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.verificationStamp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 2px dashed #059669;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  background: #f0fdf4;
+  color: #065f46;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.signatureBox {
+  text-align: center;
+  width: 220px;
+}
+
+.signatureLine {
+  border-bottom: 1px solid #0f172a;
+  margin-bottom: 0.5rem;
+  height: 40px;
+}
+
+.signatureTitle {
+  font-size: 0.75rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+/* Print Rules */
+@media print {
+  body {
+    background: #ffffff !important;
+  }
+
+  .actionToolbar,
+  header,
+  aside,
+  nav {
+    display: none !important;
+  }
+
+  .pageContainer {
+    padding: 0 !important;
+  }
+
+  .receiptCard {
+    box-shadow: none !important;
+    border: 1px solid #000000 !important;
+    max-width: 100% !important;
+    padding: 1.5rem !important;
+  }
+}

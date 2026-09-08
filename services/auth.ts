@@ -16,6 +16,7 @@ import type { ApiAuthUser } from "@/lib/api/types";
 /** The signed-in identity the UI needs. */
 export interface AuthUser {
   id?: number;
+  role?: string;
   email: string;
   firstName: string;
   lastName: string;
@@ -76,6 +77,8 @@ function toAuthUser(u: ApiAuthUser): AuthUser {
   const finalFull = full || `${first} ${last}`.trim() || email;
 
   // Handle either is_verified (camelCase target) or is_email_verified (as returned in API JSON)
+  const role = typeof u.role === "string" ? u.role : undefined;
+
   const isVerified =
     typeof u.is_verified === "boolean"
       ? u.is_verified
@@ -89,6 +92,7 @@ function toAuthUser(u: ApiAuthUser): AuthUser {
     firstName: first,
     lastName: last,
     fullName: finalFull,
+    role,
     isVerified,
   };
 }

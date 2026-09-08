@@ -66,3 +66,24 @@ export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
 
 export const PAYMENT_STATUSES = ["pending", "successful", "failed"] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
+
+export const STUDENT_STATUSES = [
+  "provisional",
+  "active",
+  "suspended",
+  "graduated",
+  "withdrawn",
+  "deferred",
+] as const;
+export type StudentStatus = (typeof STUDENT_STATUSES)[number];
+
+export const USER_ROLES = [
+  "applicant",
+  "student",
+  "officer",
+  "admin",
+  "lecturer",
+  "hod",
+] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
