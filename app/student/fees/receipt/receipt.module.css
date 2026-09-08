@@ -263,14 +263,14 @@
 
 /* Print Rules */
 @media print {
-  body {
+  :global(body) {
     background: #ffffff !important;
   }
 
   .actionToolbar,
-  header,
-  aside,
-  nav {
+  :global(header),
+  :global(aside),
+  :global(nav) {
     display: none !important;
   }
 

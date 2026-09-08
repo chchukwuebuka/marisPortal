@@ -241,7 +241,7 @@
 }
 
 @media print {
-  body {
+  :global(body) {
     background: #ffffff !important;
   }
 
