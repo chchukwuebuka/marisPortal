@@ -188,3 +188,39 @@ export async function logout(): Promise<void> {
     clearTokens();
   }
 }
+
+
+/**
+ * GET /api/auth/sessions/
+ * List active login sessions for the current user.
+ */
+export async function getActiveSessions(): Promise<any[]> {
+  const res = await api.get<any>('/auth/sessions/');
+  const list = Array.isArray(res) ? res : (res?.results || []);
+  return list.map((s: any) => ({
+    id: s.id,
+    ipAddress: s.ip_address,
+    userAgent: s.user_agent,
+    deviceName: s.device_name || s.user_agent,
+    lastActivity: s.last_activity,
+    createdAt: s.created_at,
+    expiresAt: s.expires_at,
+    isCurrent: Boolean(s.is_current),
+  }));
+}
+
+/**
+ * POST /api/auth/sessions/<id>/revoke/
+ * Revoke a specific session remotely.
+ */
+export async function revokeSession(sessionId: number): Promise<void> {
+  await api.post('/auth/sessions/' + sessionId + '/revoke/', {});
+}
+
+/**
+ * POST /api/auth/sessions/revoke-all/
+ * Force logout across all other devices.
+ */
+export async function revokeAllSessions(): Promise<void> {
+  await api.post('/auth/sessions/revoke-all/', {});
+}

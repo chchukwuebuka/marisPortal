@@ -1478,3 +1478,89 @@ export async function getAdminStudentOverview(
 export async function getOfficialTranscript(): Promise<OfficialTranscriptData> {
   return api.get<OfficialTranscriptData>("/students/me/transcript/");
 }
+
+
+/**
+ * GET /api/course-registrations/add-drop/
+ * Fetch student's course add/drop requests.
+ */
+export async function getAddDropRequests(): Promise<any[]> {
+  const res = await api.get<any>('/course-registrations/add-drop/');
+  const list = Array.isArray(res) ? res : (res?.results || []);
+  return list.map((item: any) => ({
+    id: item.id,
+    semester: item.semester,
+    course: item.course,
+    action: item.action,
+    actionDisplay: item.action === 'ADD' ? 'Add Course' : 'Drop Course',
+    reason: item.reason,
+    status: item.status,
+    statusDisplay: item.status,
+    reviewerName: item.reviewer_name,
+    reviewNotes: item.review_notes,
+    reviewedAt: item.reviewed_at,
+    createdAt: item.created_at,
+    courseDetail: item.course_detail ? {
+      id: item.course_detail.id,
+      code: item.course_detail.code,
+      title: item.course_detail.title,
+      creditUnits: item.course_detail.credit_units,
+    } : undefined,
+  }));
+}
+
+/**
+ * POST /api/course-registrations/add-drop/
+ * Submit a request to add or drop a registered course.
+ */
+export async function submitAddDropRequest(data: {
+  semester: number;
+  course: number;
+  action: 'ADD' | 'DROP';
+  reason: string;
+}): Promise<any> {
+  return api.post<any>('/course-registrations/add-drop/', data);
+}
+
+/**
+ * GET /api/students/me/clearance/status/
+ * Check real-time departmental clearance status.
+ */
+export async function getMyClearanceStatus(): Promise<any | null> {
+  try {
+    const res = await api.get<any>('/students/me/clearance/status/');
+    if (!res || !res.id) return null;
+    return {
+      id: res.id,
+      clearanceTypeName: res.clearance_type_name,
+      status: res.status,
+      overallStatusDisplay: res.overall_status_display,
+      financeAutoCleared: Boolean(res.finance_auto_cleared),
+      completionPercentage: Number(res.completion_percentage || 0),
+      createdAt: res.created_at,
+      items: (res.items || []).map((it: any) => ({
+        id: it.id,
+        department: it.department,
+        departmentDisplay: it.department_display,
+        status: it.status,
+        statusDisplay: it.status_display,
+        reviewerName: it.reviewer_name,
+        remarks: it.remarks,
+        reviewedAt: it.reviewed_at,
+      })),
+    };
+  } catch (err: any) {
+    if (err?.status === 404) return null;
+    throw err;
+  }
+}
+
+/**
+ * POST /api/students/me/clearance/initiate/
+ * Initiate clearance process (e.g. GRADUATION, FINAL, SEMESTER).
+ */
+export async function initiateClearance(clearanceTypeName = 'GRADUATION'): Promise<any> {
+  return api.post<any>('/students/me/clearance/initiate/', {
+    clearance_type_name: clearanceTypeName,
+  });
+}

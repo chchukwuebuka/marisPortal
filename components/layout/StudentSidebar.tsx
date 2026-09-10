@@ -60,6 +60,16 @@ const NAV: NavItem[] = [
     icon: FileText,
   },
   {
+    label: "Course Add/Drop",
+    href: "/student/courses/add-drop",
+    icon: BookOpen,
+  },
+  {
+    label: "Clearance Status",
+    href: "/student/clearance",
+    icon: Shield,
+  },
+  {
     label: "Results & CGPA",
     href: "/student/results",
     icon: Award,

@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft, Printer, Download } from "lucide-react";
 import { Alert, Button, Spinner } from "@/components/ui";
 import { useStudent } from "@/providers/StudentProvider";
 import { getMyResults, getResultSlip } from "@/services/students";
+import { API_BASE_URL } from "@/lib/api";
 import type { SemesterResultSlipData } from "@/types/student";
 
 export default function SemesterResultSlipPage() {
@@ -107,6 +108,17 @@ export default function SemesterResultSlipPage() {
         <div style={{ display: "flex", gap: "0.75rem" }}>
           <Button variant="primary" onClick={handlePrint} leftIcon={<Printer size={16} />}>
             Print Official Result Slip
+          </Button>
+          <Button
+            variant="secondary"
+            leftIcon={<Download size={16} />}
+            onClick={() => {
+              if (student?.id && slip?.semester) {
+                window.open(`${API_BASE_URL}/results/slip/${student.id}/${slip.semester}/pdf/`, "_blank");
+              }
+            }}
+          >
+            Download Verified PDF (with QR)
           </Button>
         </div>
       </div>

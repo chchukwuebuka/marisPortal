@@ -4,11 +4,52 @@ import { useState } from "react";
 import { Alert, Button, Card, CardBody, CardHeader, Field, Input, Select, Spinner } from "@/components/ui";
 import { PageHeader } from "@/components/layout";
 import { useStudent } from "@/providers/StudentProvider";
-import { CheckCircle2, ShieldCheck, User } from "lucide-react";
+import { CheckCircle2, ShieldCheck, User, Smartphone, Monitor, LogOut, RefreshCw } from "lucide-react";
+import { getActiveSessions, revokeSession, revokeAllSessions } from "@/services/auth";
+import type { ActiveSession } from "@/types/student";
 
 export default function StudentProfilePage() {
   const { student, profile, updateProfile, loading } = useStudent();
   const [isSaving, setIsSaving] = useState(false);
+  const [sessions, setSessions] = useState<ActiveSession[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+  const [sessionMsg, setSessionMsg] = useState<string | null>(null);
+
+  const loadSessions = async () => {
+    setLoadingSessions(true);
+    try {
+      const data = await getActiveSessions();
+      setSessions(data);
+    } catch (err: any) {
+      console.warn("Failed to load active sessions", err);
+    } finally {
+      setLoadingSessions(false);
+    }
+  };
+
+  useState(() => {
+    void loadSessions();
+  });
+
+  const handleRevokeSession = async (id: number) => {
+    try {
+      await revokeSession(id);
+      setSessionMsg("Device logged out successfully.");
+      await loadSessions();
+    } catch (err: any) {
+      setSessionMsg(err?.message || "Failed to log out device.");
+    }
+  };
+
+  const handleRevokeAllSessions = async () => {
+    try {
+      await revokeAllSessions();
+      setSessionMsg("All other devices logged out.");
+      await loadSessions();
+    } catch (err: any) {
+      setSessionMsg(err?.message || "Failed to revoke sessions.");
+    }
+  };
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -245,6 +286,93 @@ export default function StudentProfilePage() {
             </form>
           </CardBody>
         </Card>
+
+      {/* Active Login Sessions & Security Card */}
+      <Card style={{ marginTop: "1.5rem" }}>
+        <CardHeader
+          title="Device Security & Active Sessions"
+          subtitle="View logged-in devices and remotely revoke unauthorized sessions."
+        />
+        <CardBody>
+          {sessionMsg && (
+            <div style={{ marginBottom: "1rem" }}>
+              <Alert tone="info">{sessionMsg}</Alert>
+            </div>
+          )}
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
+            <span style={{ fontSize: "0.875rem", color: "var(--color-muted)" }}>
+              Manage active JWT sessions across phones, tablets, and computers.
+            </span>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <Button variant="ghost" size="sm" onClick={loadSessions} disabled={loadingSessions}>
+                <RefreshCw size={14} style={{ marginRight: 4 }} /> Refresh
+              </Button>
+              <Button variant="danger" size="sm" onClick={handleRevokeAllSessions}>
+                <LogOut size={14} style={{ marginRight: 4 }} /> Log Out All Other Devices
+              </Button>
+            </div>
+          </div>
+
+          {loadingSessions ? (
+            <div style={{ padding: "1.5rem", display: "flex", justifyContent: "center" }}>
+              <Spinner size={24} />
+            </div>
+          ) : sessions.length === 0 ? (
+            <p style={{ fontSize: "0.875rem", color: "var(--color-muted)", padding: "1rem 0" }}>
+              No other active sessions detected.
+            </p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              {sessions.map((s) => (
+                <div
+                  key={s.id}
+                  style={{
+                    padding: "0.875rem 1rem",
+                    borderRadius: "6px",
+                    border: "1px solid var(--color-border)",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: "0.75rem",
+                    background: s.isCurrent ? "#f0fdf4" : "#ffffff",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <Monitor size={20} style={{ color: s.isCurrent ? "#16a34a" : "var(--color-muted)" }} />
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <span style={{ fontWeight: 600, fontSize: "0.875rem", color: "var(--color-ink)" }}>
+                          {s.deviceName || "Web Browser"}
+                        </span>
+                        {s.isCurrent && (
+                          <span style={{ fontSize: "0.6875rem", background: "#dcfce7", color: "#15803d", padding: "1px 6px", borderRadius: 999, fontWeight: 700 }}>
+                            THIS DEVICE
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--color-muted)", marginTop: 2 }}>
+                        IP: {s.ipAddress} | Active: {new Date(s.lastActivity).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+
+                  {!s.isCurrent && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRevokeSession(s.id)}
+                    >
+                      Sign Out Device
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardBody>
+      </Card>
       </div>
     </>
   );

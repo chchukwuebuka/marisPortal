@@ -752,3 +752,58 @@ export interface OfficialTranscriptData {
     registrar_signature: string;
   };
 }
+
+
+export interface CourseAddDropRequest {
+  id: number;
+  semester: number;
+  course: number;
+  action: 'ADD' | 'DROP';
+  actionDisplay?: string;
+  reason: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  statusDisplay?: string;
+  reviewerName?: string;
+  reviewNotes?: string;
+  reviewedAt?: string;
+  createdAt: string;
+  courseDetail?: {
+    id: number;
+    code: string;
+    title: string;
+    creditUnits: number;
+  };
+}
+
+export interface ClearanceItem {
+  id: number;
+  department: string;
+  departmentDisplay: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  statusDisplay: string;
+  reviewerName?: string | null;
+  remarks?: string;
+  reviewedAt?: string | null;
+}
+
+export interface ClearanceRequestDetail {
+  id: number;
+  clearanceTypeName: string;
+  status: 'PENDING' | 'IN_PROGRESS' | 'APPROVED' | 'REJECTED';
+  overallStatusDisplay: string;
+  financeAutoCleared: boolean;
+  completionPercentage: number;
+  items: ClearanceItem[];
+  createdAt: string;
+}
+
+export interface ActiveSession {
+  id: number;
+  ipAddress: string;
+  userAgent: string;
+  deviceName: string;
+  lastActivity: string;
+  createdAt: string;
+  expiresAt: string;
+  isCurrent: boolean;
+}

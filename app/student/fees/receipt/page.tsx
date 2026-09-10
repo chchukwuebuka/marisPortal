@@ -9,10 +9,12 @@ import {
   CheckCircle2,
   FileCheck2,
   Printer,
+  Download,
   ShieldCheck,
 } from "lucide-react";
 import { Alert, Spinner } from "@/components/ui";
 import { getOfficialFeeReceipt } from "@/services/students";
+import { API_BASE_URL } from "@/lib/api";
 import type { OfficialFeeReceipt } from "@/types/student";
 import styles from "./receipt.module.css";
 
@@ -92,6 +94,19 @@ function ReceiptContent() {
         >
           <Printer size={16} />
           Print Official Receipt (SMS-FR01)
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (receiptId) {
+              window.open(`${API_BASE_URL}/fees/receipts/${receiptId}/pdf/`, "_blank");
+            }
+          }}
+          className={styles.printBtn}
+          style={{ background: "#0f766e", color: "#fff" }}
+        >
+          <Download size={16} />
+          Download Official PDF (with QR)
         </button>
       </div>
 
