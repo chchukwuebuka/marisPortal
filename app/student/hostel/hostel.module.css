@@ -14,10 +14,12 @@
   gap: 16px;
   border-bottom: 1px solid #e2e8f0;
   padding-bottom: 20px;
+  flex-wrap: wrap;
 }
 
 .badgeRow {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 8px;
 }
@@ -68,6 +70,7 @@
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
+  flex-shrink: 0;
 }
 
 .refreshBtn:hover {
@@ -75,7 +78,7 @@
   color: #0f172a;
 }
 
-/* Allocation Banner */
+/* ── Allocation Banner ─────────────────────────────────────── */
 .allocationBanner {
   background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
   color: #ffffff;
@@ -91,6 +94,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .allocIcon {
@@ -147,6 +151,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
+  white-space: nowrap;
 }
 
 .reportIssueBtn:hover {
@@ -155,7 +160,7 @@
 
 .allocDetailsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 14px;
   background: rgba(255, 255, 255, 0.04);
   padding: 16px;
@@ -199,7 +204,7 @@
 
 .roommatesGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;
 }
 
@@ -224,25 +229,33 @@
   justify-content: center;
   font-weight: 700;
   font-size: 14px;
+  flex-shrink: 0;
 }
 
 .roommateInfo {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .roommateName {
   font-size: 13px;
   font-weight: 600;
   color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .roommateSub {
   font-size: 11px;
   color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Pending Card */
+/* ── Pending Card ──────────────────────────────────────────── */
 .pendingCard {
   background: #fffbeb;
   border: 1px solid #fef3c7;
@@ -279,7 +292,7 @@
   color: #b45309;
 }
 
-/* Application Form Card */
+/* ── Application Form Card ─────────────────────────────────── */
 .formCard {
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -326,12 +339,6 @@
   gap: 16px;
 }
 
-@media (max-width: 640px) {
-  .formRow {
-    grid-template-columns: 1fr;
-  }
-}
-
 .formGroup {
   display: flex;
   flex-direction: column;
@@ -354,6 +361,7 @@
   background: #ffffff;
   outline: none;
   transition: border-color 0.15s;
+  box-sizing: border-box;
 }
 
 .select:focus, .textarea:focus {
@@ -369,6 +377,7 @@
   margin-top: 10px;
   padding-top: 18px;
   border-top: 1px solid #f1f5f9;
+  flex-wrap: wrap;
 }
 
 .policyNotice {
@@ -377,11 +386,14 @@
   gap: 8px;
   color: #64748b;
   font-size: 12px;
+  flex: 1;
+  min-width: 0;
 }
 
 .submitBtn {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   background: #2563eb;
   color: #ffffff;
@@ -392,6 +404,7 @@
   border: none;
   cursor: pointer;
   transition: background 0.15s;
+  white-space: nowrap;
 }
 
 .submitBtn:hover:not(:disabled) {
@@ -403,7 +416,7 @@
   cursor: not-allowed;
 }
 
-/* Halls Grid */
+/* ── Halls Grid ────────────────────────────────────────────── */
 .hallsSection {
   margin-top: 10px;
 }
@@ -417,7 +430,7 @@
 
 .hallsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 16px;
 }
 
@@ -494,7 +507,7 @@
   color: #3b82f6;
 }
 
-/* Modal */
+/* ── Modal ─────────────────────────────────────────────────── */
 .modalOverlay {
   position: fixed;
   inset: 0;
@@ -543,6 +556,7 @@
   justify-content: flex-end;
   gap: 10px;
   margin-top: 14px;
+  flex-wrap: wrap;
 }
 
 .cancelBtn {
@@ -560,7 +574,7 @@
   background: #f1f5f9;
 }
 
-/* Alerts & Spinners */
+/* ── Alerts & Spinners ─────────────────────────────────────── */
 .alertSuccess {
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
@@ -607,4 +621,149 @@
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Mobile-first: ≤ 640 px ────────────────────────────────── */
+@media (max-width: 640px) {
+  .container {
+    padding: 16px 14px 48px;
+    gap: 20px;
+  }
+
+  /* Header: let refresh button drop below the title block */
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  /* Refresh button stretches full-width on mobile */
+  .refreshBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Allocation banner */
+  .allocationBanner {
+    padding: 18px 16px;
+    border-radius: 12px;
+    gap: 16px;
+  }
+
+  /* Allocation header: stack icon+name row, then Report Issue below */
+  .allocHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .hallTitle {
+    font-size: 18px;
+  }
+
+  /* "Report Issue" button: full-width on mobile */
+  .reportIssueBtn {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Allocation detail grid: 2 columns on mobile */
+  .allocDetailsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 12px;
+    gap: 10px;
+  }
+
+  /* Roommates: single column */
+  .roommatesGrid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Pending card: tighten */
+  .pendingCard {
+    padding: 14px;
+  }
+
+  /* Form card */
+  .formCard {
+    padding: 18px 16px;
+    border-radius: 12px;
+  }
+
+  /* Form row: always single column on mobile */
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+
+  /* Form footer: stack policy notice + submit button */
+  .formFooter {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .policyNotice {
+    flex: none;
+  }
+
+  .submitBtn {
+    width: 100%;
+    padding: 12px 20px;
+  }
+
+  /* Halls grid: single column */
+  .hallsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Modal: full-width on small screens, less padding */
+  .modalCard {
+    padding: 18px 16px;
+    border-radius: 12px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  /* Modal actions: stack buttons */
+  .modalActions {
+    flex-direction: column;
+  }
+
+  .cancelBtn,
+  .modalActions .submitBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ── Small tablet: 641 – 768 px ────────────────────────────── */
+@media (min-width: 641px) and (max-width: 768px) {
+  .container {
+    padding: 20px 18px 60px;
+  }
+
+  .allocDetailsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .roommatesGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .hallsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .formRow {
+    grid-template-columns: 1fr 1fr;
+  }
 }

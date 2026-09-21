@@ -287,7 +287,7 @@ export default function StudentDocumentsPage() {
                     background: rf.status === "approved" ? "#ecfdf5" : "#fef3c7",
                     color: rf.status === "approved" ? "#065f46" : "#92400e",
                   }}>
-                    {rf.status.toUpperCase()}
+                    {rf.status?.toUpperCase() ?? "PENDING"}
                   </span>
                 </div>
                 <div style={{ marginTop: "0.75rem" }}>

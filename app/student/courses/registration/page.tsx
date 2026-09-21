@@ -3,17 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  AlertCircle,
-  ArrowRight,
-  BookCheck,
-  BookOpen,
-  CheckCircle,
-  Clock,
   FileText,
   Lock,
   Save,
   Send,
-  Sparkles,
 } from "lucide-react";
 import { Alert, Badge, Button, Card, CardBody, CardHeader, Spinner } from "@/components/ui";
 import { PageHeader } from "@/components/layout";
@@ -151,12 +144,159 @@ export default function CourseRegistrationPage() {
 
   return (
     <>
+      {/* ── Responsive styles ─────────────────────────────────────── */}
+      <style>{`
+        /* PageHeader action buttons */
+        .reg-header-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.625rem;
+          align-items: center;
+        }
+
+        /* Stat-card grid */
+        .reg-stat-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 1rem;
+          margin-bottom: 1.5rem;
+        }
+
+        /* Course row: left side (icon + info) */
+        .reg-course-left {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.75rem;
+          min-width: 0;
+          flex: 1;
+        }
+
+        /* Course code + title inline pair */
+        .reg-course-meta {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 0.375rem;
+          min-width: 0;
+        }
+
+        /* Course row: right side badges */
+        .reg-course-badges {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          flex-shrink: 0;
+          margin-left: 0.5rem;
+        }
+
+        /* Individual course row */
+        .reg-course-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 1rem;
+          border-radius: 8px;
+          border: 1px solid #e2e8f0;
+          transition: all 0.15s ease;
+        }
+
+        /* Sticky footer */
+        .reg-footer {
+          position: sticky;
+          bottom: 1.5rem;
+          background: #ffffff;
+          padding: 1rem 1.5rem;
+          border-radius: 12px;
+          box-shadow: 0 10px 25px -5px rgba(0,0,0,0.10), 0 8px 10px -6px rgba(0,0,0,0.10);
+          border: 1px solid var(--color-border);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 1rem;
+        }
+
+        .reg-footer-info {
+          display: flex;
+          flex-direction: column;
+          gap: 0.2rem;
+        }
+
+        .reg-footer-actions {
+          display: flex;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+        }
+
+        /* ── Mobile breakpoint (≤ 640 px) ────────────────────── */
+        @media (max-width: 640px) {
+          .reg-stat-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .reg-header-actions {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          /* Stack course row content vertically on very small screens */
+          .reg-course-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+          }
+
+          .reg-course-left {
+            width: 100%;
+          }
+
+          .reg-course-badges {
+            margin-left: 0;
+            align-self: flex-start;
+          }
+
+          /* Footer: stack info + buttons vertically */
+          .reg-footer {
+            flex-direction: column;
+            align-items: stretch;
+            bottom: 0.75rem;
+            border-radius: 0;
+            padding: 1rem;
+            /* Stretch to full width inside the page padding */
+            margin-left: calc(-1 * var(--page-padding, 1rem));
+            margin-right: calc(-1 * var(--page-padding, 1rem));
+          }
+
+          .reg-footer-info span.reg-footer-range {
+            display: block;
+            margin-left: 0 !important;
+          }
+
+          .reg-footer-actions {
+            flex-direction: column;
+          }
+
+          .reg-footer-actions > * {
+            width: 100%;
+            justify-content: center;
+          }
+        }
+
+        /* ── Small-tablet breakpoint (641 – 768 px) ─────────── */
+        @media (min-width: 641px) and (max-width: 768px) {
+          .reg-stat-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+      `}</style>
+
+      {/* ── Page header ───────────────────────────────────────────── */}
       <PageHeader
         eyebrow="Academic Management"
         title="Course Registration Portal"
         description="Select your core curriculum and approved elective courses for the active semester."
         actions={
-          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+          <div className="reg-header-actions">
             {currentReg?.id && (
               <Link href={`/student/courses/slip?id=${currentReg.id}`}>
                 <Button variant="secondary" leftIcon={<FileText size={16} />}>
@@ -188,7 +328,7 @@ export default function CourseRegistrationPage() {
         }
       />
 
-      {/* Messages */}
+      {/* ── Alert messages ────────────────────────────────────────── */}
       {successMsg && (
         <div style={{ marginBottom: "1.5rem" }}>
           <Alert tone="success" title="Success">
@@ -205,7 +345,7 @@ export default function CourseRegistrationPage() {
         </div>
       )}
 
-      {/* Current Registration Status Banner */}
+      {/* ── Registration status banner ────────────────────────────── */}
       {currentReg && (
         <div style={{ marginBottom: "1.5rem" }}>
           {currentReg.status === "approved" && (
@@ -226,33 +366,28 @@ export default function CourseRegistrationPage() {
           )}
           {currentReg.status === "draft" && (
             <Alert tone="warning" title="Draft Course Selection">
-              You have a saved draft with {currentReg.totalCredits} units. Make sure to click "Submit Registration" before the deadline to complete your registration.
+              You have a saved draft with {currentReg.totalCredits} units. Make sure to click &ldquo;Submit Registration&rdquo; before the deadline to complete your registration.
             </Alert>
           )}
         </div>
       )}
 
-      {/* Overview Stat Cards */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "1rem",
-          marginBottom: "1.5rem",
-        }}
-      >
+      {/* ── Overview stat cards ───────────────────────────────────── */}
+      <div className="reg-stat-grid">
+        {/* Session & Semester */}
         <div style={{ background: "#ffffff", padding: "1.25rem", borderRadius: "10px", border: "1px solid var(--color-border)" }}>
           <span style={{ fontSize: "0.75rem", color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-            Active Session & Semester
+            Active Session &amp; Semester
           </span>
           <p style={{ fontWeight: 700, fontSize: "1.05rem", color: "var(--color-ink)", marginTop: "0.25rem" }}>
             {availableData?.session?.name || "2026/2027"} — {availableData?.semester?.name || "First Semester"}
           </p>
         </div>
 
+        {/* Level & Programme */}
         <div style={{ background: "#ffffff", padding: "1.25rem", borderRadius: "10px", border: "1px solid var(--color-border)" }}>
           <span style={{ fontSize: "0.75rem", color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-            Academic Level & Programme
+            Academic Level &amp; Programme
           </span>
           <p style={{ fontWeight: 700, fontSize: "1.05rem", color: "var(--color-primary)", marginTop: "0.25rem" }}>
             {student?.currentLevel?.name || "100 Level"} ({student?.programmeCode || "ND"})
@@ -261,7 +396,7 @@ export default function CourseRegistrationPage() {
 
         {/* Live Credit Meter */}
         <div style={{ background: "#ffffff", padding: "1.25rem", borderRadius: "10px", border: "1px solid var(--color-border)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
             <span style={{ fontSize: "0.75rem", color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
               Credit Meter (Min {minCredits} — Max {maxCredits})
             </span>
@@ -297,6 +432,7 @@ export default function CourseRegistrationPage() {
           </p>
         </div>
 
+        {/* Registration Status */}
         <div style={{ background: "#ffffff", padding: "1.25rem", borderRadius: "10px", border: "1px solid var(--color-border)" }}>
           <span style={{ fontSize: "0.75rem", color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
             Registration Status
@@ -307,7 +443,7 @@ export default function CourseRegistrationPage() {
         </div>
       </div>
 
-      {/* Compulsory Core Courses Section */}
+      {/* ── Compulsory courses ────────────────────────────────────── */}
       <Card style={{ marginBottom: "1.5rem" }}>
         <CardHeader
           title="1. Compulsory Core Curriculum (Mandatory)"
@@ -321,21 +457,16 @@ export default function CourseRegistrationPage() {
               {availableData?.compulsoryCourses.map((c) => (
                 <div
                   key={c.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "1rem",
-                    background: "#f8fafc",
-                    borderRadius: "8px",
-                    border: "1px solid #e2e8f0",
-                  }}
+                  className="reg-course-row"
+                  style={{ background: "#f8fafc" }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                  {/* Left: lock icon + info */}
+                  <div className="reg-course-left">
                     <div
                       style={{
                         width: "22px",
                         height: "22px",
+                        minWidth: "22px",
                         borderRadius: "4px",
                         background: "#059669",
                         color: "#ffffff",
@@ -347,12 +478,14 @@ export default function CourseRegistrationPage() {
                     >
                       <Lock size={12} />
                     </div>
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <span style={{ fontFamily: "monospace", fontWeight: 700, color: "var(--color-primary)" }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="reg-course-meta">
+                        <span style={{ fontFamily: "monospace", fontWeight: 700, color: "var(--color-primary)", whiteSpace: "nowrap" }}>
                           {c.courseCode}
                         </span>
-                        <span style={{ fontWeight: 600, color: "var(--color-ink)" }}>{c.courseTitle}</span>
+                        <span style={{ fontWeight: 600, color: "var(--color-ink)", wordBreak: "break-word" }}>
+                          {c.courseTitle}
+                        </span>
                       </div>
                       {c.prerequisiteCode && (
                         <span style={{ fontSize: "0.75rem", color: "#d97706", fontWeight: 500 }}>
@@ -361,7 +494,9 @@ export default function CourseRegistrationPage() {
                       )}
                     </div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+
+                  {/* Right: badges */}
+                  <div className="reg-course-badges">
                     <Badge tone="neutral">Compulsory</Badge>
                     <Badge tone="info">{c.creditUnits} Units</Badge>
                   </div>
@@ -372,7 +507,7 @@ export default function CourseRegistrationPage() {
         </CardBody>
       </Card>
 
-      {/* Elective Courses Section */}
+      {/* ── Elective courses ──────────────────────────────────────── */}
       <Card style={{ marginBottom: "2rem" }}>
         <CardHeader
           title="2. Elective Courses (Optional / Departmental Options)"
@@ -389,19 +524,15 @@ export default function CourseRegistrationPage() {
                   <div
                     key={c.id}
                     onClick={() => !isLocked && toggleElective(c.course)}
+                    className="reg-course-row"
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "1rem",
                       background: isSelected ? "#eff6ff" : "#ffffff",
-                      borderRadius: "8px",
                       border: isSelected ? "1px solid #3b82f6" : "1px solid #e2e8f0",
                       cursor: isLocked ? "default" : "pointer",
-                      transition: "all 0.15s ease",
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                    {/* Left: checkbox + info */}
+                    <div className="reg-course-left">
                       <input
                         type="checkbox"
                         checked={isSelected}
@@ -410,16 +541,20 @@ export default function CourseRegistrationPage() {
                         style={{
                           width: "18px",
                           height: "18px",
+                          minWidth: "18px",
                           cursor: isLocked ? "default" : "pointer",
                           accentColor: "var(--color-primary)",
+                          marginTop: "2px",
                         }}
                       />
-                      <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                          <span style={{ fontFamily: "monospace", fontWeight: 700, color: "var(--color-primary)" }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div className="reg-course-meta">
+                          <span style={{ fontFamily: "monospace", fontWeight: 700, color: "var(--color-primary)", whiteSpace: "nowrap" }}>
                             {c.courseCode}
                           </span>
-                          <span style={{ fontWeight: 600, color: "var(--color-ink)" }}>{c.courseTitle}</span>
+                          <span style={{ fontWeight: 600, color: "var(--color-ink)", wordBreak: "break-word" }}>
+                            {c.courseTitle}
+                          </span>
                         </div>
                         {c.prerequisiteCode && (
                           <span style={{ fontSize: "0.75rem", color: "#d97706", fontWeight: 500 }}>
@@ -428,7 +563,9 @@ export default function CourseRegistrationPage() {
                         )}
                       </div>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+
+                    {/* Right: badges */}
+                    <div className="reg-course-badges">
                       <Badge tone="neutral">Elective</Badge>
                       <Badge tone={isSelected ? "info" : "neutral"}>{c.creditUnits} Units</Badge>
                     </div>
@@ -440,34 +577,19 @@ export default function CourseRegistrationPage() {
         </CardBody>
       </Card>
 
-      {/* Bottom Sticky Action Footer when not locked */}
+      {/* ── Sticky action footer ──────────────────────────────────── */}
       {!isLocked && (
-        <div
-          style={{
-            position: "sticky",
-            bottom: "1.5rem",
-            background: "#ffffff",
-            padding: "1rem 1.5rem",
-            borderRadius: "12px",
-            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
-            border: "1px solid var(--color-border)",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "1rem",
-          }}
-        >
-          <div>
+        <div className="reg-footer">
+          <div className="reg-footer-info">
             <span style={{ fontWeight: 700, fontSize: "1rem", color: "var(--color-ink)" }}>
               Total Units Selected: {totalCredits} Units
             </span>
-            <span style={{ fontSize: "0.875rem", color: "var(--color-muted)", marginLeft: "0.75rem" }}>
-              (Allowed Range: {minCredits} – {maxCredits} Units)
+            <span className="reg-footer-range" style={{ fontSize: "0.875rem", color: "var(--color-muted)" }}>
+              Allowed Range: {minCredits} – {maxCredits} Units
             </span>
           </div>
 
-          <div style={{ display: "flex", gap: "0.75rem" }}>
+          <div className="reg-footer-actions">
             <Button
               variant="secondary"
               disabled={saving || submitting}

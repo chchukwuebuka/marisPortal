@@ -191,7 +191,7 @@ export default function StudentCoursesPage() {
         </Card>
       )}
 
-      {/* Filter Tabs for Programme Curriculum Catalogue */}
+      {/* ── Departmental Programme Curriculum (temporarily hidden) ──
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem", flexWrap: "wrap", gap: "1rem" }}>
         <h3 style={{ fontSize: "1.1rem", fontWeight: 700, margin: 0, color: "var(--color-ink)" }}>
           Departmental Programme Curriculum
@@ -310,6 +310,7 @@ export default function StudentCoursesPage() {
           ))}
         </div>
       )}
+      ── End hidden section ── */}
     </>
   );
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, CheckCircle, Download, Printer } from "lucide-react";
+import { ArrowLeft, Printer } from "lucide-react";
 import { Alert, Button, Spinner } from "@/components/ui";
 import { useStudent } from "@/providers/StudentProvider";
 import { getCurrentRegistration, getRegistrationSlip } from "@/services/students";
@@ -68,7 +68,7 @@ export default function RegistrationSlipPage() {
         <Alert tone="warning" title="Course Slip Not Available">
           {errorMsg || "No course registration record found."}
         </Alert>
-        <div style={{ marginTop: "1.5rem", display: "flex", gap: "1rem" }}>
+        <div className="slip-error-actions">
           <Link href="/student/courses/registration">
             <Button variant="primary">Go to Course Registration</Button>
           </Link>
@@ -82,69 +82,280 @@ export default function RegistrationSlipPage() {
 
   return (
     <>
-      {/* Top action toolbar (Hidden when printing) */}
-      <div
-        className="no-print"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "1.5rem",
-          flexWrap: "wrap",
-          gap: "1rem",
-        }}
-      >
+      {/* ── Responsive styles ──────────────────────────────────────── */}
+      <style>{`
+        /* Error-state action buttons */
+        .slip-error-actions {
+          margin-top: 1.5rem;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 1rem;
+        }
+
+        /* Top action toolbar */
+        .slip-toolbar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1.5rem;
+          flex-wrap: wrap;
+          gap: 0.75rem;
+        }
+
+        /* Slip outer container */
+        .slip-container {
+          background: #ffffff;
+          border: 1px solid #cbd5e1;
+          border-radius: 8px;
+          padding: 2.5rem;
+          max-width: 850px;
+          margin: 0 auto 3rem auto;
+          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+          color: #0f172a;
+          font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        /* Slip header: logo + institution text + status badge */
+        .slip-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 1rem;
+          border-bottom: 2px solid #0f172a;
+          padding-bottom: 1rem;
+          margin-bottom: 1.5rem;
+          flex-wrap: wrap;
+        }
+
+        .slip-header-left {
+          display: flex;
+          align-items: center;
+          gap: 1.25rem;
+          flex: 1;
+          min-width: 0;
+        }
+
+        .slip-header-right {
+          text-align: right;
+          flex-shrink: 0;
+        }
+
+        /* Student particulars outer grid: info | photo */
+        .slip-particulars {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: 1.5rem;
+          padding: 1rem;
+          background: #f8fafc;
+          border-radius: 6px;
+          border: 1px solid #e2e8f0;
+          margin-bottom: 1.5rem;
+        }
+
+        /* Inner 2-col info grid */
+        .slip-info-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 0.6rem 1.5rem;
+          font-size: 0.875rem;
+        }
+
+        /* Passport photo box */
+        .slip-photo {
+          width: 100px;
+          height: 115px;
+          border: 1px solid #cbd5e1;
+          border-radius: 4px;
+          overflow: hidden;
+          background: #e2e8f0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        /* Table horizontal-scroll wrapper */
+        .slip-table-wrap {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          margin-bottom: 1.5rem;
+          border: 1px solid #cbd5e1;
+          border-radius: 4px;
+        }
+
+        .slip-table-wrap table {
+          width: 100%;
+          min-width: 540px;         /* prevent columns from collapsing */
+          border-collapse: collapse;
+          font-size: 0.875rem;
+        }
+
+        /* Signature block: 3 columns */
+        .slip-sigs {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 2rem;
+          text-align: center;
+        }
+
+        /* ── Mobile (≤ 600 px) ──────────────────────────────────── */
+        @media (max-width: 600px) {
+          .slip-container {
+            padding: 1.25rem 1rem;
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+            margin-left: calc(-1 * var(--page-padding, 1rem));
+            margin-right: calc(-1 * var(--page-padding, 1rem));
+            max-width: 100%;
+          }
+
+          /* Stack toolbar buttons */
+          .slip-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .slip-toolbar > * {
+            width: 100%;
+            justify-content: center;
+          }
+
+          /* Header: stack institution block + badge vertically */
+          .slip-header {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+          .slip-header-right {
+            text-align: left;
+          }
+
+          /* Logo size shrinks a bit */
+          .slip-header-left img {
+            width: 52px !important;
+            height: 52px !important;
+          }
+
+          /* Institution heading */
+          .slip-header-left h1 {
+            font-size: 1.05rem !important;
+          }
+
+          /* Particulars: stack photo below info on mobile */
+          .slip-particulars {
+            grid-template-columns: 1fr;
+          }
+
+          /* Photo moves above or below — we push it to top via order */
+          .slip-photo {
+            order: -1;
+            width: 80px;
+            height: 92px;
+          }
+
+          /* Inner info: single column on very narrow */
+          .slip-info-grid {
+            grid-template-columns: 1fr;
+          }
+
+          /* Signature block: single column on mobile */
+          .slip-sigs {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+          }
+
+          /* Error actions: stack vertically */
+          .slip-error-actions {
+            flex-direction: column;
+          }
+          .slip-error-actions > * {
+            width: 100%;
+            justify-content: center;
+          }
+        }
+
+        /* ── Small tablet (601 – 768 px) ────────────────────────── */
+        @media (min-width: 601px) and (max-width: 768px) {
+          .slip-container {
+            padding: 1.75rem 1.25rem;
+          }
+
+          .slip-info-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          /* Signature: 2 columns, HOD wraps below */
+          .slip-sigs {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        /* ── Print rules ─────────────────────────────────────────── */
+        @media print {
+          body {
+            background: #ffffff !important;
+            color: #000000 !important;
+          }
+          .no-print,
+          aside,
+          nav,
+          header,
+          footer,
+          button {
+            display: none !important;
+          }
+          .slip-container {
+            box-shadow: none !important;
+            border: none !important;
+            padding: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+          }
+          /* Ensure table doesn't get cut on print */
+          .slip-table-wrap {
+            overflow: visible !important;
+            border: 1px solid #cbd5e1 !important;
+          }
+          .slip-table-wrap table {
+            min-width: unset !important;
+          }
+          .slip-sigs {
+            grid-template-columns: repeat(3, 1fr) !important;
+          }
+        }
+      `}</style>
+
+      {/* ── Top action toolbar ────────────────────────────────────── */}
+      <div className="slip-toolbar no-print">
         <Link href="/student/courses/registration">
           <Button variant="ghost" leftIcon={<ArrowLeft size={16} />}>
             Back to Course Registration
           </Button>
         </Link>
-        <div style={{ display: "flex", gap: "0.75rem" }}>
-          <Button variant="primary" onClick={handlePrint} leftIcon={<Printer size={16} />}>
-            Print Registration Slip
-          </Button>
-        </div>
+        <Button variant="primary" onClick={handlePrint} leftIcon={<Printer size={16} />}>
+          Print Registration Slip
+        </Button>
       </div>
 
-      {/* Official Printable Slip Container */}
-      <div
-        id="printable-slip"
-        style={{
-          background: "#ffffff",
-          border: "1px solid #cbd5e1",
-          borderRadius: "8px",
-          padding: "2.5rem",
-          maxWidth: "850px",
-          margin: "0 auto 3rem auto",
-          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
-          color: "#0f172a",
-          fontFamily: "system-ui, -apple-system, sans-serif",
-        }}
-      >
-        {/* Header with Crest and Institution title */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            borderBottom: "2px solid #0f172a",
-            paddingBottom: "1rem",
-            marginBottom: "1.5rem",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "1.25rem" }}>
+      {/* ── Official Printable Slip ───────────────────────────────── */}
+      <div id="printable-slip" className="slip-container">
+
+        {/* Header: crest + institution + status badge */}
+        <div className="slip-header">
+          <div className="slip-header-left">
             <Image
               src="/image/logo.png"
               alt="Marist Crest"
               width={70}
               height={70}
-              style={{ objectFit: "contain" }}
+              style={{ objectFit: "contain", flexShrink: 0 }}
             />
-            <div>
-              <h1 style={{ fontSize: "1.4rem", fontWeight: 800, margin: 0, textTransform: "uppercase", color: "#1e3a8a" }}>
+            <div style={{ minWidth: 0 }}>
+              <h1 style={{ fontSize: "1.4rem", fontWeight: 800, margin: 0, textTransform: "uppercase", color: "#1e3a8a", lineHeight: 1.2 }}>
                 Marist Polytechnic, Emene, Enugu
               </h1>
-              <p style={{ margin: "2px 0 0 0", fontSize: "0.85rem", color: "#475569", fontWeight: 500 }}>
+              <p style={{ margin: "3px 0 0 0", fontSize: "0.85rem", color: "#475569", fontWeight: 500 }}>
                 Office of the Registrar • Directorate of Academic Affairs
               </p>
               <p style={{ margin: "2px 0 0 0", fontSize: "0.8rem", color: "#64748b", letterSpacing: "0.5px", textTransform: "uppercase" }}>
@@ -153,7 +364,7 @@ export default function RegistrationSlipPage() {
             </div>
           </div>
 
-          <div style={{ textAlign: "right" }}>
+          <div className="slip-header-right">
             <span
               style={{
                 display: "inline-block",
@@ -175,20 +386,10 @@ export default function RegistrationSlipPage() {
           </div>
         </div>
 
-        {/* Student Particulars Grid */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr auto",
-            gap: "1.5rem",
-            padding: "1rem",
-            background: "#f8fafc",
-            borderRadius: "6px",
-            border: "1px solid #e2e8f0",
-            marginBottom: "1.5rem",
-          }}
-        >
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.6rem 1.5rem", fontSize: "0.875rem" }}>
+        {/* Student particulars */}
+        <div className="slip-particulars">
+          {/* Info fields */}
+          <div className="slip-info-grid">
             <div>
               <span style={{ color: "#64748b", fontSize: "0.75rem", textTransform: "uppercase" }}>Full Name:</span>
               <p style={{ margin: "2px 0 0 0", fontWeight: 700, color: "#0f172a" }}>{slip.student.fullName}</p>
@@ -229,20 +430,8 @@ export default function RegistrationSlipPage() {
             </div>
           </div>
 
-          {/* Student Passport Photo Box */}
-          <div
-            style={{
-              width: "100px",
-              height: "115px",
-              border: "1px solid #cbd5e1",
-              borderRadius: "4px",
-              overflow: "hidden",
-              background: "#e2e8f0",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
+          {/* Passport photo */}
+          <div className="slip-photo">
             {slip.student.photo || student?.profile?.photoUrl ? (
               <img
                 src={slip.student.photo || student?.profile?.photoUrl || ""}
@@ -257,24 +446,17 @@ export default function RegistrationSlipPage() {
           </div>
         </div>
 
-        {/* Registered Courses Table */}
-        <div style={{ marginBottom: "1.5rem" }}>
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              fontSize: "0.875rem",
-              border: "1px solid #cbd5e1",
-            }}
-          >
+        {/* Registered Courses Table — scrollable on mobile */}
+        <div className="slip-table-wrap">
+          <table>
             <thead>
               <tr style={{ background: "#f1f5f9", borderBottom: "2px solid #cbd5e1", textAlign: "left" }}>
-                <th style={{ padding: "0.6rem 0.75rem", width: "40px" }}>S/N</th>
-                <th style={{ padding: "0.6rem 0.75rem", width: "110px" }}>Course Code</th>
+                <th style={{ padding: "0.6rem 0.75rem", width: "36px" }}>S/N</th>
+                <th style={{ padding: "0.6rem 0.75rem", width: "100px" }}>Code</th>
                 <th style={{ padding: "0.6rem 0.75rem" }}>Course Title</th>
-                <th style={{ padding: "0.6rem 0.75rem", width: "90px", textAlign: "center" }}>Credit Units</th>
-                <th style={{ padding: "0.6rem 0.75rem", width: "110px" }}>Type</th>
-                <th style={{ padding: "0.6rem 0.75rem", width: "100px" }}>Status</th>
+                <th style={{ padding: "0.6rem 0.75rem", width: "72px", textAlign: "center" }}>Units</th>
+                <th style={{ padding: "0.6rem 0.75rem", width: "100px" }}>Type</th>
+                <th style={{ padding: "0.6rem 0.75rem", width: "90px" }}>Status</th>
               </tr>
             </thead>
             <tbody>
@@ -287,17 +469,17 @@ export default function RegistrationSlipPage() {
                   }}
                 >
                   <td style={{ padding: "0.6rem 0.75rem", color: "#64748b" }}>{idx + 1}</td>
-                  <td style={{ padding: "0.6rem 0.75rem", fontWeight: 700, fontFamily: "monospace" }}>
+                  <td style={{ padding: "0.6rem 0.75rem", fontWeight: 700, fontFamily: "monospace", whiteSpace: "nowrap" }}>
                     {course.code}
                   </td>
                   <td style={{ padding: "0.6rem 0.75rem", fontWeight: 500 }}>{course.title}</td>
                   <td style={{ padding: "0.6rem 0.75rem", textAlign: "center", fontWeight: 700 }}>
                     {course.creditUnits}
                   </td>
-                  <td style={{ padding: "0.6rem 0.75rem", fontSize: "0.8125rem", color: "#475569" }}>
+                  <td style={{ padding: "0.6rem 0.75rem", fontSize: "0.8125rem", color: "#475569", whiteSpace: "nowrap" }}>
                     {course.isCompulsory ? "Compulsory" : "Elective"}
                   </td>
-                  <td style={{ padding: "0.6rem 0.75rem", fontSize: "0.8125rem", textTransform: "capitalize" }}>
+                  <td style={{ padding: "0.6rem 0.75rem", fontSize: "0.8125rem", textTransform: "capitalize", whiteSpace: "nowrap" }}>
                     {course.status}
                   </td>
                 </tr>
@@ -327,7 +509,7 @@ export default function RegistrationSlipPage() {
             courses will result in an automatic carryover.
           </p>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "2rem", textAlign: "center" }}>
+          <div className="slip-sigs">
             <div>
               <div style={{ borderBottom: "1px solid #0f172a", height: "30px", marginBottom: "0.5rem" }} />
               <p style={{ margin: 0, fontWeight: 700, fontSize: "0.8125rem" }}>Student Signature</p>
@@ -344,7 +526,9 @@ export default function RegistrationSlipPage() {
               </div>
               <p style={{ margin: 0, fontWeight: 700, fontSize: "0.8125rem" }}>Course Advisor / Level Coord.</p>
               <p style={{ margin: "2px 0 0 0", fontSize: "0.75rem", color: "#64748b" }}>
-                {slip.approvedAt ? `Approved: ${new Date(slip.approvedAt).toLocaleDateString()}` : "Date: _______________"}
+                {slip.approvedAt
+                  ? `Approved: ${new Date(slip.approvedAt).toLocaleDateString()}`
+                  : "Date: _______________"}
               </p>
             </div>
 
@@ -361,32 +545,6 @@ export default function RegistrationSlipPage() {
           Generated via Marist Polytechnic Student Management System (SMS) • Printed on {new Date().toLocaleString()}
         </div>
       </div>
-
-      {/* Embedded print stylesheet */}
-      <style jsx global>{`
-        @media print {
-          body {
-            background: #ffffff !important;
-            color: #000000 !important;
-          }
-          .no-print,
-          aside,
-          nav,
-          header,
-          footer,
-          button {
-            display: none !important;
-          }
-          #printable-slip {
-            box-shadow: none !important;
-            border: none !important;
-            padding: 0 !important;
-            max-width: 100% !important;
-            width: 100% !important;
-            margin: 0 !important;
-          }
-        }
-      `}</style>
     </>
   );
 }
