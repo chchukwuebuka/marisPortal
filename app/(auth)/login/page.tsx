@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -27,6 +27,8 @@ type LoginValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get("redirect") || searchParams.get("next");
   const { login } = useAuth();
   const [formError, setFormError] = useState<string | null>(null);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
@@ -44,6 +46,26 @@ export default function LoginPage() {
     setUnverifiedEmail(null);
     try {
       const u = await login(values.email, values.password);
+
+      // 1. Honor explicit redirect query if safe
+      if (redirectUrl && redirectUrl.startsWith("/")) {
+        router.replace(redirectUrl);
+        return;
+      }
+
+      // 2. Check if user has an active legacy student registration
+      try {
+        const { getMyLegacyRegistration } = await import("@/services/legacy");
+        const reg = await getMyLegacyRegistration();
+        if (reg && reg.id && reg.status !== "approved") {
+          router.replace("/existing-student");
+          return;
+        }
+      } catch {
+        // Not a legacy registrant, continue to standard dashboard
+      }
+
+      // 3. Fallback based on user role
       if (u.role === "student") {
         router.replace("/student/dashboard");
       } else {
@@ -54,7 +76,6 @@ export default function LoginPage() {
         err instanceof ApiError
           ? err.message
           : "We couldn't sign you in. Please try again.";
-      // A common cause is an unverified email — offer a way forward.
       if (
         (err instanceof ApiError && err.code === "email_not_verified") ||
         /verif/i.test(message)
@@ -131,7 +152,7 @@ export default function LoginPage() {
       <div style={{ marginTop: "20px", padding: "12px 16px", borderRadius: "10px", background: "rgba(36, 71, 159, 0.06)", border: "1px solid rgba(36, 71, 159, 0.15)", fontSize: "13px", textAlign: "center" }}>
         <span style={{ color: "#475569" }}>Existing student admitted prior to the portal? </span>
         <Link href="/existing-student" style={{ color: "#24479f", fontWeight: 600, textDecoration: "underline" }}>
-          Onboard your account with your Matric No →
+          Onboard your account with your Matric No &rarr;
         </Link>
       </div>
 

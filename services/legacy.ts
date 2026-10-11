@@ -85,3 +85,23 @@ export async function submitLegacyRegistration(
 export async function getLegacyTimeline(): Promise<LegacyRegistrationEvent[]> {
   return api.get<LegacyRegistrationEvent[]>("/legacy-students/me/timeline/");
 }
+export interface LegacyLookupResponse {
+  exists: boolean;
+  matric_number?: string;
+  first_name?: string;
+  full_name?: string;
+  email?: string;
+  masked_email?: string;
+  status?: string;
+  status_display?: string;
+  has_profile?: boolean;
+  correction_note?: string;
+}
+
+export async function lookupLegacyMatric(
+  matricNumber: string
+): Promise<LegacyLookupResponse> {
+  return api.post<LegacyLookupResponse>("/legacy-students/lookup/", {
+    matric_number: matricNumber,
+  });
+}

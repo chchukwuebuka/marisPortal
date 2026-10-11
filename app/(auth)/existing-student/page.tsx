@@ -15,6 +15,8 @@ import {
   FileCheck,
   FileText,
   GraduationCap,
+  KeyRound,
+  LogIn,
   Info,
   Loader2,
   Lock,
@@ -48,6 +50,8 @@ import {
   submitLegacyRegistration,
   updateMyLegacyProfile,
   uploadLegacyDocument,
+  lookupLegacyMatric,
+  type LegacyLookupResponse,
 } from "@/services/legacy";
 import {
   getAdmissionOptions,
@@ -59,6 +63,7 @@ import {
   type ApiLevel,
 } from "@/services/catalogue";
 import { clearTokens, getAccessToken } from "@/lib/api/tokens";
+import { useAuth } from "@/hooks/useAuth";
 import { ApiError } from "@/lib/api";
 import type {
   LegacyProfileInput,
@@ -211,7 +216,16 @@ const DEFAULT_FALLBACK_REQUIREMENTS: LegacyRequirementChecklistItem[] = [
 
 export default function ExistingStudentOnboardingPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [isPending, startTransition] = useTransition();
+
+  // Resume / Returning student state
+  const [resumeMode, setResumeMode] = useState<"new" | "resume">("new");
+  const [lookupLoading, setLookupLoading] = useState<boolean>(false);
+  const [lookupResult, setLookupResult] = useState<LegacyLookupResponse | null>(null);
+  const [resumeEmail, setResumeEmail] = useState<string>("");
+  const [resumePassword, setResumePassword] = useState<string>("");
+  const [resuming, setResuming] = useState<boolean>(false);
 
   // Wizard state
   const [step, setStep] = useState<number>(1);
@@ -284,6 +298,23 @@ export default function ExistingStudentOnboardingPage() {
       setLoading(true);
       setErrorMsg(null);
       try {
+        // Check URL params for returning student links
+        if (typeof window !== "undefined") {
+          const sp = new URLSearchParams(window.location.search);
+          const qMatric = sp.get("matric");
+          const qEmail = sp.get("email");
+          const qMode = sp.get("mode");
+          if (qMatric) {
+            setStartForm((prev) => ({ ...prev, matric_number: qMatric.toUpperCase() }));
+            handleMatricLookup(qMatric.toUpperCase());
+          }
+          if (qEmail) {
+            setResumeEmail(qEmail);
+          }
+          if (qMode === "resume" || qEmail) {
+            setResumeMode("resume");
+          }
+        }
         // 1. Fetch live catalogue and reference levels from backend
         const [sessData, admTree, rawSchools, rawDepts, rawProgs, rawLevels] =
           await Promise.allSettled([
@@ -494,6 +525,94 @@ export default function ExistingStudentOnboardingPage() {
     }
   }
 
+  // --- Returning Student Lookup & Resume Handlers ---
+  async function handleMatricLookup(explicitMatric?: string) {
+    const raw = (explicitMatric || startForm.matric_number || "").trim().toUpperCase();
+    if (!raw || raw.length < 4) return;
+
+    setLookupLoading(true);
+    try {
+      const res = await lookupLegacyMatric(raw);
+      if (res && res.exists) {
+        setLookupResult(res);
+        if (res.email) {
+          setResumeEmail(res.email);
+        }
+        setResumeMode("resume");
+        if (res.correction_note) {
+          setSuccessMsg(
+            `Found existing registration for ${res.full_name || raw}. Status: ${res.status_display || res.status}.`
+          );
+        }
+      } else {
+        setLookupResult(null);
+      }
+    } catch {
+      // Endpoint may not be deployed yet on remote server, fallback gracefully
+      setLookupResult(null);
+    } finally {
+      setLookupLoading(false);
+    }
+  }
+
+  async function handleResumeRegistration(e: React.FormEvent) {
+    e.preventDefault();
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    const emailToUse = resumeEmail.trim() || lookupResult?.email || "";
+    if (!emailToUse) {
+      setErrorMsg("Please enter the email address registered with your account.");
+      return;
+    }
+    if (!resumePassword) {
+      setErrorMsg("Please enter your portal password.");
+      return;
+    }
+
+    setResuming(true);
+    try {
+      await login(emailToUse, resumePassword);
+
+      // Successfully logged in, load legacy registration
+      const reg = await getMyLegacyRegistration();
+      if (reg && reg.id) {
+        setRegistration(reg);
+        populateFormFromRegistration(reg, programmes, sessions);
+        await reloadRequirementsAndTimeline();
+
+        if (reg.status === "pending" || reg.status === "correction_required") {
+          // If academic profile is complete, take student straight to Step 3 (Documents)
+          if (reg.programme && reg.date_of_birth && reg.phone) {
+            setStep(3);
+            setMaxStepReached(4);
+          } else {
+            setStep(2);
+            setMaxStepReached(3);
+          }
+        } else {
+          setStep(5);
+          setMaxStepReached(5);
+        }
+        setSuccessMsg(
+          `Welcome back, ${reg.first_name || "student"}! Application resumed.`
+        );
+      } else {
+        setErrorMsg("No active onboarding record found for this account.");
+      }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setErrorMsg(
+          err.message || "Failed to sign in. Please verify your email and password."
+        );
+      } else {
+        setErrorMsg("Failed to sign in. Please verify your password.");
+      }
+    } finally {
+      setResuming(false);
+    }
+  }
+
   // --- Step 1: Start Registration ---
   async function handleStartRegistration(e: React.FormEvent) {
     e.preventDefault();
@@ -570,10 +689,16 @@ export default function ExistingStudentOnboardingPage() {
           );
           return;
         }
-        // Case 3: Email already registered in accounts
-        if (msg.toLowerCase().includes("already exists") || msg.toLowerCase().includes("log in first")) {
+        // Case 3: Email already registered in accounts -> switch to resume mode
+        if (
+          msg.toLowerCase().includes("already exists") ||
+          msg.toLowerCase().includes("log in first") ||
+          msg.toLowerCase().includes("already registered")
+        ) {
+          if (startForm.email) setResumeEmail(startForm.email);
+          setResumeMode("resume");
           setErrorMsg(
-            "An account with this email address already exists. If you already registered, please log in with your password to resume your registration."
+            "An account for this registration already exists. Enter your password below to resume where you left off."
           );
           return;
         }
@@ -1574,6 +1699,30 @@ export default function ExistingStudentOnboardingPage() {
             </div>
           </div>
 
+          {/* Registry Correction Instructions Callout (if active) */}
+          {registration?.correction_note && (
+            <div style={{
+              marginBottom: "20px",
+              padding: "16px 20px",
+              borderRadius: "12px",
+              background: "#fffbeb",
+              border: "1.5px solid #f59e0b",
+              color: "#92400e"
+            }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                <AlertCircle size={22} style={{ color: "#d97706", flexShrink: 0, marginTop: 2 }} />
+                <div>
+                  <h4 style={{ margin: "0 0 6px 0", fontSize: "15px", fontWeight: 700, color: "#b45309" }}>
+                    Registry Correction Instructions
+                  </h4>
+                  <p style={{ margin: 0, fontSize: "13.5px", lineHeight: "1.55", color: "#78350f" }}>
+                    {registration.correction_note}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Upload Progress Status Banner */}
           {(() => {
             const activeRequirementsList =
@@ -1974,12 +2123,19 @@ export default function ExistingStudentOnboardingPage() {
                   Proceed to Student Portal <ArrowRight size={18} />
                 </Button>
               ) : registration?.status === "correction_required" ? (
-                <Button
-                  variant="outline"
-                  onClick={() => setStep(2)}
-                >
-                  Edit Details & Fix Issues <ArrowRight size={16} />
-                </Button>
+                <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
+                  <Button
+                    onClick={() => setStep(3)}
+                  >
+                    Re-upload Documents (Step 3) <ArrowRight size={16} />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setStep(2)}
+                  >
+                    Review Profile (Step 2)
+                  </Button>
+                </div>
               ) : (
                 <Button
                   variant="outline"
