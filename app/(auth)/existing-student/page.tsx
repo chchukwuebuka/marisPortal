@@ -226,6 +226,9 @@ export default function ExistingStudentOnboardingPage() {
   const [resumeEmail, setResumeEmail] = useState<string>("");
   const [resumePassword, setResumePassword] = useState<string>("");
   const [resuming, setResuming] = useState<boolean>(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [resending, setResending] = useState<boolean>(false);
+  const [resendSuccess, setResendSuccess] = useState<string | null>(null);
 
   // Wizard state
   const [step, setStep] = useState<number>(1);
@@ -601,6 +604,13 @@ export default function ExistingStudentOnboardingPage() {
         setErrorMsg("No active onboarding record found for this account.");
       }
     } catch (err) {
+      const msg = err instanceof ApiError ? (err.message || "") : "";
+      if (
+        (err instanceof ApiError && err.code === "email_not_verified") ||
+        /verif/i.test(msg)
+      ) {
+        setUnverifiedEmail(emailToUse);
+      }
       if (err instanceof ApiError) {
         setErrorMsg(
           err.message || "Failed to sign in. Please verify your email and password."
@@ -1236,6 +1246,57 @@ export default function ExistingStudentOnboardingPage() {
               )}
 
               <form onSubmit={handleResumeRegistration} className={styles.form}>
+                {unverifiedEmail && (
+                  <div style={{
+                    padding: "14px 16px",
+                    borderRadius: "10px",
+                    background: "#fffbeb",
+                    border: "1.5px solid #f59e0b",
+                    marginBottom: "16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px"
+                  }}>
+                    <span style={{ fontSize: "13px", fontWeight: 600, color: "#92400e" }}>
+                      Email verification pending for {unverifiedEmail}
+                    </span>
+                    <p style={{ margin: 0, fontSize: "12.5px", color: "#78350f", lineHeight: "1.5" }}>
+                      Check your email inbox for the verification link, or request a new link below:
+                    </p>
+                    <div style={{ display: "flex", gap: "10px", alignItems: "center", marginTop: "4px" }}>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={resending}
+                        onClick={async () => {
+                          setResending(true);
+                          try {
+                            const { resendVerification } = await import("@/services/auth");
+                            await resendVerification(unverifiedEmail);
+                            setResendSuccess("Verification email resent! Check your inbox.");
+                          } catch {
+                            setErrorMsg("Failed to resend verification email.");
+                          } finally {
+                            setResending(false);
+                          }
+                        }}
+                      >
+                        {resending ? "Sending..." : "Resend Verification Link"}
+                      </Button>
+                      <Link
+                        href={`/verify?email=${encodeURIComponent(unverifiedEmail)}`}
+                        style={{ fontSize: "12.5px", color: "#1e3a8a", textDecoration: "underline", fontWeight: 600 }}
+                      >
+                        Enter token code manually &rarr;
+                      </Link>
+                    </div>
+                    {resendSuccess && (
+                      <span style={{ fontSize: "12px", color: "#15803d", fontWeight: 600 }}>
+                        ✓ {resendSuccess}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <Field label="Email Address Registered on Account" required>
                   <Input
                     type="email"
