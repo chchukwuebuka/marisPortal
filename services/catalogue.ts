@@ -63,6 +63,7 @@ export async function getAdmissionOptions(
   const data = await api.get<AdmissionOptionsResponse>(
     "/academics/admission-options/",
     {
+      auth: false,
       query: session ? { session } : undefined,
     },
   );
@@ -82,7 +83,7 @@ function extractList<T>(raw: unknown): T[] {
 
 export async function getSessions(): Promise<AcademicSession[]> {
   try {
-    const raw = await api.get<unknown>("/academics/sessions/");
+    const raw = await api.get<unknown>("/academics/sessions/", { auth: false });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return extractList<any>(raw).map(toDomainSession);
   } catch (err) {
@@ -93,7 +94,7 @@ export async function getSessions(): Promise<AcademicSession[]> {
 
 export async function getSchools(): Promise<School[]> {
   try {
-    const raw = await api.get<unknown>("/academics/schools/");
+    const raw = await api.get<unknown>("/academics/schools/", { auth: false });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return extractList<any>(raw).map(toDomainSchool);
   } catch (err) {
@@ -106,6 +107,7 @@ export async function getSchools(): Promise<School[]> {
 export async function getDepartments(schoolId?: string): Promise<Department[]> {
   try {
     const raw = await api.get<unknown>("/academics/departments/", {
+      auth: false,
       query: schoolId ? { school: schoolId } : undefined,
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -122,12 +124,31 @@ export async function getProgrammes(
 ): Promise<Programme[]> {
   try {
     const raw = await api.get<unknown>("/academics/programmes/", {
+      auth: false,
       query: departmentId ? { department: departmentId } : undefined,
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return extractList<any>(raw).map(toDomainProgramme);
   } catch (err) {
     console.error("Failed to fetch programmes:", err);
+    return [];
+  }
+}
+
+export interface ApiLevel {
+  id: number;
+  name: string;
+  code: string;
+  numeric_value?: number;
+}
+
+/** Reference academic levels (100, 200, 300, 400, 500 etc.) */
+export async function getLevels(): Promise<ApiLevel[]> {
+  try {
+    const raw = await api.get<unknown>("/academics/levels/", { auth: false });
+    return extractList<ApiLevel>(raw);
+  } catch (err) {
+    console.error("Failed to fetch levels:", err);
     return [];
   }
 }

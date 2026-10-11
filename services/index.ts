@@ -6,3 +6,4 @@
 export * from "./catalogue";
 export * from "./documents";
 export * from "./payments";
+export * from "./legacy";

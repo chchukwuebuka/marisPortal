@@ -182,6 +182,12 @@ export default function RegisterPage() {
           Create account
         </Button>
       </form>
+      <div style={{ marginTop: "20px", padding: "12px 16px", borderRadius: "10px", background: "rgba(36, 71, 159, 0.06)", border: "1px solid rgba(36, 71, 159, 0.15)", fontSize: "13px", textAlign: "center" }}>
+        <span style={{ color: "#475569" }}>Already hold an institutional matric number? </span>
+        <Link href="/existing-student" style={{ color: "#24479f", fontWeight: 600, textDecoration: "underline" }}>
+          Start existing student onboarding →
+        </Link>
+      </div>
 
       <p className={styles.switch}>
         Already have an account? <Link href="/login">Sign in</Link>

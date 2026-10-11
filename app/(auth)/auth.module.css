@@ -4,6 +4,17 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: 1.05fr 1fr;
+  transition: grid-template-columns 0.3s ease;
+}
+
+.wrap:has([data-wide-auth="true"]) {
+  grid-template-columns: 0.75fr 1.25fr;
+}
+
+@media (max-width: 1080px) {
+  .wrap:has([data-wide-auth="true"]) {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 860px) {
@@ -147,11 +158,24 @@
   justify-content: center;
   padding: 38px 24px;
   background: var(--color-canvas);
+  min-height: 100vh;
+}
+
+@media (max-width: 640px) {
+  .formPanel {
+    padding: 24px 16px;
+    align-items: flex-start;
+  }
 }
 
 .formInner {
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
+  transition: max-width 0.25s ease;
+}
+
+.formInner:has([data-wide-auth="true"]) {
+  max-width: 760px;
 }
 
 .mobileBrand {
