@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -11,7 +11,7 @@ import { getMyResults, getResultSlip } from "@/services/students";
 import { API_BASE_URL } from "@/lib/api";
 import type { SemesterResultSlipData } from "@/types/student";
 
-export default function SemesterResultSlipPage() {
+function SemesterResultSlipContent() {
   const searchParams = useSearchParams();
   const sessionParam = searchParams.get("session");
   const semesterParam = searchParams.get("semester");
@@ -447,5 +447,19 @@ export default function SemesterResultSlipPage() {
         }
       `}</style>
     </>
+  );
+}
+
+export default function SemesterResultSlipPage() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ padding: "4rem 0", display: "flex", justifyContent: "center" }}>
+          <Spinner size={32} />
+        </div>
+      }
+    >
+      <SemesterResultSlipContent />
+    </Suspense>
   );
 }

@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { LogIn } from "lucide-react";
-import { Alert, Button, Checkbox, Field, Input } from "@/components/ui";
+import { Alert, Button, Checkbox, Field, Input, Spinner } from "@/components/ui";
 import { useAuth } from "@/hooks/useAuth";
 import { ApiError } from "@/lib/api";
 import styles from "../auth.module.css";
@@ -25,7 +25,7 @@ const loginSchema = z.object({
 
 type LoginValues = z.infer<typeof loginSchema>;
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get("redirect") || searchParams.get("next");
@@ -160,5 +160,27 @@ export default function LoginPage() {
         New to Marist Polytechnic? <Link href="/register">Create an account</Link>
       </p>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div
+          className={styles.card}
+          style={{
+            minHeight: "360px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Spinner size={32} />
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

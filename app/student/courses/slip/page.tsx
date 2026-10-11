@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -10,7 +10,7 @@ import { useStudent } from "@/providers/StudentProvider";
 import { getCurrentRegistration, getRegistrationSlip } from "@/services/students";
 import type { RegistrationSlipData } from "@/types/student";
 
-export default function RegistrationSlipPage() {
+function RegistrationSlipContent() {
   const searchParams = useSearchParams();
   const regIdParam = searchParams.get("id");
   const { student } = useStudent();
@@ -546,5 +546,19 @@ export default function RegistrationSlipPage() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function RegistrationSlipPage() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ padding: "4rem 0", display: "flex", justifyContent: "center" }}>
+          <Spinner size={32} />
+        </div>
+      }
+    >
+      <RegistrationSlipContent />
+    </Suspense>
   );
 }
