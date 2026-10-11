@@ -1079,9 +1079,53 @@ interface WireStudentFeeInvoice {
     created_at: string;
   }>;
   fee_breakdown: Array<{
+    id?: number;
     category: string;
+    code?: string;
+    fee_type?: string;
+    description?: string;
     amount: number;
+    amount_paid?: number;
+    balance_due?: number;
+    is_cleared?: boolean;
   }>;
+  tutor_fee?: {
+    name: string;
+    description: string;
+    amount: number;
+    amount_paid: number;
+    balance_due: number;
+    is_cleared: boolean;
+  };
+  hostel_fee?: {
+    name: string;
+    description: string;
+    amount: number;
+    amount_paid: number;
+    balance_due: number;
+    is_cleared: boolean;
+    is_applicable?: boolean;
+  };
+  other_fees?: Array<{
+    id?: number;
+    category: string;
+    code?: string;
+    fee_type?: string;
+    description?: string;
+    amount: number;
+    amount_paid?: number;
+    balance_due?: number;
+    is_cleared?: boolean;
+  }>;
+  fee_summary?: {
+    tutor_subtotal: number;
+    hostel_subtotal: number;
+    other_subtotal: number;
+    grand_total: number;
+    total_paid: number;
+    total_balance_due: number;
+    is_cleared: boolean;
+  };
 }
 
 function adaptFeeInvoice(w: WireStudentFeeInvoice): StudentFeeInvoice {
@@ -1120,7 +1164,60 @@ function adaptFeeInvoice(w: WireStudentFeeInvoice): StudentFeeInvoice {
       paidAt: p.paid_at,
       createdAt: p.created_at,
     })),
-    feeBreakdown: w.fee_breakdown || [],
+    feeBreakdown: (w.fee_breakdown || []).map((item) => ({
+      id: item.id,
+      category: item.category,
+      code: item.code,
+      feeType: item.fee_type,
+      description: item.description,
+      amount: Number(item.amount),
+      amountPaid: item.amount_paid !== undefined ? Number(item.amount_paid) : undefined,
+      balanceDue: item.balance_due !== undefined ? Number(item.balance_due) : undefined,
+      isCleared: item.is_cleared,
+    })),
+    tutorFee: w.tutor_fee
+      ? {
+          name: w.tutor_fee.name,
+          description: w.tutor_fee.description,
+          amount: Number(w.tutor_fee.amount),
+          amountPaid: Number(w.tutor_fee.amount_paid),
+          balanceDue: Number(w.tutor_fee.balance_due),
+          isCleared: w.tutor_fee.is_cleared,
+        }
+      : undefined,
+    hostelFee: w.hostel_fee
+      ? {
+          name: w.hostel_fee.name,
+          description: w.hostel_fee.description,
+          amount: Number(w.hostel_fee.amount),
+          amountPaid: Number(w.hostel_fee.amount_paid),
+          balanceDue: Number(w.hostel_fee.balance_due),
+          isCleared: w.hostel_fee.is_cleared,
+          isApplicable: w.hostel_fee.is_applicable,
+        }
+      : undefined,
+    otherFees: (w.other_fees || []).map((item) => ({
+      id: item.id,
+      category: item.category,
+      code: item.code,
+      feeType: item.fee_type || "other",
+      description: item.description,
+      amount: Number(item.amount),
+      amountPaid: item.amount_paid !== undefined ? Number(item.amount_paid) : undefined,
+      balanceDue: item.balance_due !== undefined ? Number(item.balance_due) : undefined,
+      isCleared: item.is_cleared,
+    })),
+    feeSummary: w.fee_summary
+      ? {
+          tutorSubtotal: Number(w.fee_summary.tutor_subtotal),
+          hostelSubtotal: Number(w.fee_summary.hostel_subtotal),
+          otherSubtotal: Number(w.fee_summary.other_subtotal),
+          grandTotal: Number(w.fee_summary.grand_total),
+          totalPaid: Number(w.fee_summary.total_paid),
+          totalBalanceDue: Number(w.fee_summary.total_balance_due),
+          isCleared: w.fee_summary.is_cleared,
+        }
+      : undefined,
   };
 }
 
@@ -1146,6 +1243,8 @@ export async function initializeFeePayment(payload: {
   amount: number;
   invoice_id?: number;
   callback_url?: string;
+  fee_type?: string;
+  description?: string;
 }): Promise<FeePaymentInitResponse> {
   const res = await api.post<{
     reference: string;

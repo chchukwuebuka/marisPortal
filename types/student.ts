@@ -356,6 +356,8 @@ export interface StudentFeePaymentItem {
   id: number;
   reference: string;
   receiptNumber: string;
+  feeType?: string;
+  description?: string;
   amount: number;
   gateway: string;
   gatewayDisplay: string;
@@ -365,6 +367,41 @@ export interface StudentFeePaymentItem {
   accessCode?: string;
   paidAt?: string;
   createdAt: string;
+}
+
+export interface FeeBreakdownItem {
+  id?: number;
+  category: string;
+  code?: string;
+  feeType?: "tuition" | "hostel" | "other" | string;
+  description?: string;
+  amount: number;
+  amountPaid?: number;
+  balanceDue?: number;
+  isCleared?: boolean;
+}
+
+export interface ComponentFeeDetail {
+  name: string;
+  description: string;
+  amount: number;
+  amountPaid: number;
+  balanceDue: number;
+  isCleared: boolean;
+  isApplicable?: boolean;
+}
+
+export interface InvoiceFeeSummary {
+  tutorSubtotal: number;
+  hostelSubtotal: number;
+  coreSubtotal?: number;
+  corePaid?: number;
+  coreBalanceDue?: number;
+  otherSubtotal: number;
+  grandTotal: number;
+  totalPaid: number;
+  totalBalanceDue: number;
+  isCleared: boolean;
 }
 
 export interface StudentFeeInvoice {
@@ -389,10 +426,11 @@ export interface StudentFeeInvoice {
   paidAt?: string | null;
   createdAt: string;
   payments: StudentFeePaymentItem[];
-  feeBreakdown: Array<{
-    category: string;
-    amount: number;
-  }>;
+  feeBreakdown: FeeBreakdownItem[];
+  tutorFee?: ComponentFeeDetail;
+  hostelFee?: ComponentFeeDetail;
+  otherFees?: FeeBreakdownItem[];
+  feeSummary?: InvoiceFeeSummary;
 }
 
 export interface FeePaymentInitResponse {

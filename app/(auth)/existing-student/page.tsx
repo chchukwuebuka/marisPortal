@@ -1,56 +1,18 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import {
-  AlertCircle,
-  ArrowLeft,
-  ArrowRight,
-  BookOpen,
-  Building2,
-  Check,
-  CheckCircle2,
-  Clock,
-  FileCheck,
-  FileText,
-  GraduationCap,
-  KeyRound,
-  LogIn,
-  Info,
-  Loader2,
-  Lock,
-  Phone,
-  RefreshCw,
-  School as SchoolIcon,
-  Send,
-  Sparkles,
-  Trash2,
-  UploadCloud,
-  User,
-  Users,
-} from "lucide-react";
-import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  DocStatusTag,
-  Field,
-  FileUpload,
-  Input,
-  Select,
-} from "@/components/ui";
+import { AlertCircle, CheckCircle2, Loader2, Sparkles } from "lucide-react";
+import { Alert } from "@/components/ui";
 import {
   deleteLegacyDocument,
   getLegacyRequirements,
   getLegacyTimeline,
   getMyLegacyRegistration,
+  lookupLegacyMatric,
   startLegacyRegistration,
   submitLegacyRegistration,
   updateMyLegacyProfile,
   uploadLegacyDocument,
-  lookupLegacyMatric,
   type LegacyLookupResponse,
 } from "@/services/legacy";
 import {
@@ -73,151 +35,26 @@ import type {
   LegacyStartInput,
 } from "@/types/legacy";
 import type { AcademicSession } from "@/types/domain";
+import {
+  DEFAULT_FALLBACK_REQUIREMENTS,
+  STEPS,
+  type DepartmentOption,
+  type FacultyOption,
+  type ProgrammeOption,
+} from "./types";
+import {
+  Step1Account,
+  Step2Profile,
+  Step3Documents,
+  Step4Review,
+  Step5Status,
+  StepperNav,
+} from "./components";
 import styles from "./existing-student.module.css";
 
-interface FacultyOption {
-  id: number;
-  name: string;
-  code?: string;
-}
-
-interface DepartmentOption {
-  id: number;
-  name: string;
-  code?: string;
-  schoolId: number;
-}
-
-interface ProgrammeOption {
-  id: number;
-  name: string;
-  type?: string;
-  departmentId: number;
-  departmentName?: string;
-  schoolId: number;
-  schoolName?: string;
-  duration_years?: number;
-}
-
-const GENDER_OPTIONS = [
-  { value: "male", label: "Male" },
-  { value: "female", label: "Female" },
-];
-
-const MARITAL_OPTIONS = [
-  { value: "single", label: "Single" },
-  { value: "married", label: "Married" },
-  { value: "divorced", label: "Divorced" },
-  { value: "widowed", label: "Widowed" },
-];
-
-const RELIGION_OPTIONS = [
-  { value: "Christianity", label: "Christianity" },
-  { value: "Islam", label: "Islam" },
-  { value: "Other", label: "Other" },
-];
-
-const RELATIONSHIP_OPTIONS = [
-  { value: "Parent", label: "Parent" },
-  { value: "Father", label: "Father" },
-  { value: "Mother", label: "Mother" },
-  { value: "Brother", label: "Brother" },
-  { value: "Sister", label: "Sister" },
-  { value: "Uncle", label: "Uncle" },
-  { value: "Aunt", label: "Aunt" },
-  { value: "Spouse", label: "Spouse" },
-  { value: "Guardian", label: "Guardian" },
-  { value: "Other", label: "Other" },
-];
-
-const NIGERIAN_STATES = [
-  "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue",
-  "Borno", "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu",
-  "FCT - Abuja", "Gombe", "Imo", "Jigawa", "Kaduna", "Kano", "Katsina",
-  "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa", "Niger", "Ogun", "Ondo",
-  "Osun", "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara"
-];
-
-const STEPS = [
-  { num: 1, label: "Matric & Account", shortTitle: "Account Setup" },
-  { num: 2, label: "Profile & Academic", shortTitle: "Profile & Academic" },
-  { num: 3, label: "Documents", shortTitle: "Upload Documents" },
-  { num: 4, label: "Review & Submit", shortTitle: "Review & Submit" },
-  { num: 5, label: "Status & Approval", shortTitle: "Status Tracker" },
-];
-
-const DEFAULT_FALLBACK_REQUIREMENTS: LegacyRequirementChecklistItem[] = [
-  {
-    requirement: {
-      id: 9,
-      name: "Passport Photograph",
-      code: "passport-photograph",
-      description: "Recent passport-sized photograph on a plain white or light background.",
-      required: true,
-      allowed_formats: ["jpg", "jpeg", "png", "pdf"],
-      max_size_mb: 5,
-      applies_to: "both",
-    },
-    document: null,
-  },
-  {
-    requirement: {
-      id: 10,
-      name: "O'Level Result (WAEC/NECO/NABTEB)",
-      code: "olevel-result",
-      description: "Statement of result or certificate for your O'Level sitting(s).",
-      required: true,
-      allowed_formats: ["pdf", "jpg", "jpeg", "png"],
-      max_size_mb: 5,
-      applies_to: "both",
-    },
-    document: null,
-  },
-  {
-    requirement: {
-      id: 11,
-      name: "JAMB Result Slip",
-      code: "jamb-result",
-      description: "Your JAMB UTME result slip for your admission year.",
-      required: true,
-      allowed_formats: ["pdf", "jpg", "jpeg", "png"],
-      max_size_mb: 5,
-      applies_to: "both",
-    },
-    document: null,
-  },
-  {
-    requirement: {
-      id: 12,
-      name: "Birth Certificate / Declaration of Age",
-      code: "birth-certificate",
-      description: "Birth certificate or a sworn declaration of age.",
-      required: true,
-      allowed_formats: ["pdf", "jpg", "jpeg", "png"],
-      max_size_mb: 5,
-      applies_to: "both",
-    },
-    document: null,
-  },
-  {
-    requirement: {
-      id: 13,
-      name: "LGA Identification Letter",
-      code: "lga-identification",
-      description: "Local Government identification / indigene letter (optional).",
-      required: false,
-      allowed_formats: ["pdf", "jpg", "jpeg", "png"],
-      max_size_mb: 5,
-      applies_to: "both",
-    },
-    document: null,
-  },
-];
-
 export default function ExistingStudentOnboardingPage() {
-  const router = useRouter();
   const { login } = useAuth();
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   // Resume / Returning student state
   const [resumeMode, setResumeMode] = useState<"new" | "resume">("new");
@@ -227,8 +64,6 @@ export default function ExistingStudentOnboardingPage() {
   const [resumePassword, setResumePassword] = useState<string>("");
   const [resuming, setResuming] = useState<boolean>(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
-  const [resending, setResending] = useState<boolean>(false);
-  const [resendSuccess, setResendSuccess] = useState<string | null>(null);
 
   // Wizard state
   const [step, setStep] = useState<number>(1);
@@ -453,6 +288,7 @@ export default function ExistingStudentOnboardingPage() {
       }
     }
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function populateFormFromRegistration(
@@ -544,14 +380,15 @@ export default function ExistingStudentOnboardingPage() {
         setResumeMode("resume");
         if (res.correction_note) {
           setSuccessMsg(
-            `Found existing registration for ${res.full_name || raw}. Status: ${res.status_display || res.status}.`
+            `Found existing registration for ${res.full_name || raw}. Status: ${
+              res.status_display || res.status
+            }.`
           );
         }
       } else {
         setLookupResult(null);
       }
     } catch {
-      // Endpoint may not be deployed yet on remote server, fallback gracefully
       setLookupResult(null);
     } finally {
       setLookupLoading(false);
@@ -577,7 +414,6 @@ export default function ExistingStudentOnboardingPage() {
     try {
       await login(emailToUse, resumePassword);
 
-      // Successfully logged in, load legacy registration
       const reg = await getMyLegacyRegistration();
       if (reg && reg.id) {
         setRegistration(reg);
@@ -585,7 +421,6 @@ export default function ExistingStudentOnboardingPage() {
         await reloadRequirementsAndTimeline();
 
         if (reg.status === "pending" || reg.status === "correction_required") {
-          // If academic profile is complete, take student straight to Step 3 (Documents)
           if (reg.programme && reg.date_of_birth && reg.phone) {
             setStep(3);
             setMaxStepReached(4);
@@ -604,7 +439,7 @@ export default function ExistingStudentOnboardingPage() {
         setErrorMsg("No active onboarding record found for this account.");
       }
     } catch (err) {
-      const msg = err instanceof ApiError ? (err.message || "") : "";
+      const msg = err instanceof ApiError ? err.message || "" : "";
       if (
         (err instanceof ApiError && err.code === "email_not_verified") ||
         /verif/i.test(msg)
@@ -666,7 +501,6 @@ export default function ExistingStudentOnboardingPage() {
     } catch (err) {
       if (err instanceof ApiError) {
         const msg = err.message || "";
-        // Case 1: User already has an active registration
         if (
           msg.toLowerCase().includes("already have an existing-student registration") ||
           msg.toLowerCase().includes("in progress")
@@ -691,7 +525,6 @@ export default function ExistingStudentOnboardingPage() {
             // fallback
           }
         }
-        // Case 2: Stale staff session in browser
         if (msg.toLowerCase().includes("staff accounts cannot start a student registration")) {
           clearTokens();
           setErrorMsg(
@@ -699,7 +532,6 @@ export default function ExistingStudentOnboardingPage() {
           );
           return;
         }
-        // Case 3: Email already registered in accounts -> switch to resume mode
         if (
           msg.toLowerCase().includes("already exists") ||
           msg.toLowerCase().includes("log in first") ||
@@ -721,22 +553,18 @@ export default function ExistingStudentOnboardingPage() {
     }
   }
 
-  // Helper to resolve session ID from text input
   function resolveSessionId(text: string): number | undefined {
     const clean = text.trim().toLowerCase();
     if (!clean) return undefined;
 
-    // 1. Direct match by name
     const exact = sessions.find((s) => s.name.toLowerCase() === clean);
     if (exact) return Number(exact.id);
 
-    // 2. Partial year match e.g. "2021" matches "2021/2022"
     const partial = sessions.find(
       (s) => s.name.toLowerCase().startsWith(clean) || s.name.includes(clean)
     );
     if (partial) return Number(partial.id);
 
-    // 3. Fallback to existing profile session ID
     return profileForm.admission_session;
   }
 
@@ -839,9 +667,7 @@ export default function ExistingStudentOnboardingPage() {
       reqItem?.allowed_formats || ["pdf", "jpg", "jpeg", "png"];
     const maxMb =
       reqItem?.max_size_mb ||
-      (reqItem?.max_file_size
-        ? Math.round(reqItem.max_file_size / (1024 * 1024))
-        : 5);
+      (reqItem?.max_file_size ? Math.round(reqItem.max_file_size / (1024 * 1024)) : 5);
 
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
     if (allowedExts.length > 0 && !allowedExts.includes(ext)) {
@@ -887,7 +713,7 @@ export default function ExistingStudentOnboardingPage() {
         getMyLegacyRegistration().then((reg) => setRegistration(reg)).catch(() => {}),
       ]);
       setSuccessMsg("Document removed.");
-    } catch (err) {
+    } catch {
       setErrorMsg("Could not delete document.");
     }
   }
@@ -905,7 +731,9 @@ export default function ExistingStudentOnboardingPage() {
     try {
       const res = await submitLegacyRegistration(true);
       setRegistration(res);
-      setSuccessMsg("Your onboarding application has been submitted to the Registry for verification.");
+      setSuccessMsg(
+        "Your onboarding application has been submitted to the Registry for verification."
+      );
       await reloadRequirementsAndTimeline();
       setMaxStepReached(5);
       setStep(5);
@@ -922,85 +750,6 @@ export default function ExistingStudentOnboardingPage() {
       setSubmitting(false);
     }
   }
-
-  // Filtered dropdown lists based on cascading selection
-  const filteredDepartments = selectedSchoolId
-    ? departments.filter((d) => d.schoolId === selectedSchoolId)
-    : departments;
-
-  const filteredProgrammes = selectedDepartmentId
-    ? programmes.filter((p) => p.departmentId === selectedDepartmentId)
-    : selectedSchoolId
-    ? programmes.filter((p) => p.schoolId === selectedSchoolId)
-    : programmes;
-
-  // Selected programme, department, and faculty details
-  const activeProg = programmes.find((p) => p.id === profileForm.programme);
-  const activeDept = departments.find(
-    (d) => d.id === (activeProg?.departmentId || selectedDepartmentId)
-  );
-  const activeSchool = schools.find(
-    (s) => s.id === (activeProg?.schoolId || activeDept?.schoolId || selectedSchoolId)
-  );
-
-  // Dynamic level options formatted directly from backend Level objects
-  const isDegreeProgramme =
-    activeProg?.type === "BSC" ||
-    activeProg?.type === "BENG" ||
-    activeProg?.type === "DEGREE" ||
-    activeProg?.type === "DIRECT_ENTRY";
-  const isHndProgramme = activeProg?.type === "HND";
-  const isNdProgramme = activeProg?.type === "ND";
-
-  // Build options dynamically from live backend levels list
-  const levelSelectOptions = [
-    { value: "", label: "Select Current Academic Level" },
-    ...levels
-      .filter((lvl) => {
-        const num = lvl.numeric_value || parseInt(lvl.code, 10) || lvl.id;
-        if (isNdProgramme) return num === 100 || num === 200 || lvl.id === 1 || lvl.id === 2;
-        if (isHndProgramme) return num === 300 || num === 400 || lvl.id === 3 || lvl.id === 4;
-        return true; // For BSC, BENG, Degree, and unselected programme, show all levels from backend
-      })
-      .map((lvl) => {
-        const num = lvl.numeric_value || parseInt(lvl.code, 10) || lvl.id;
-        let formattedLabel = lvl.name;
-
-        if (isDegreeProgramme) {
-          if (num === 100 || lvl.code === "100" || lvl.id === 1) formattedLabel = `${lvl.name} (Year 1 / Fresh Entry)`;
-          else if (num === 200 || lvl.code === "200" || lvl.id === 2) formattedLabel = `${lvl.name} (Year 2 / Direct Entry)`;
-          else if (num === 300 || lvl.code === "300" || lvl.id === 3) formattedLabel = `${lvl.name} (Year 3)`;
-          else if (num === 400 || lvl.code === "400" || lvl.id === 4) formattedLabel = `${lvl.name} (Year 4)`;
-          else if (num === 500 || lvl.code === "500" || lvl.id === 5) formattedLabel = `${lvl.name} (Year 5 / Final Year)`;
-          else formattedLabel = `${lvl.name}`;
-        } else if (isNdProgramme) {
-          if (num === 100 || lvl.code === "100" || lvl.id === 1) formattedLabel = `ND I (${lvl.name})`;
-          else if (num === 200 || lvl.code === "200" || lvl.id === 2) formattedLabel = `ND II (${lvl.name})`;
-          else formattedLabel = `ND - ${lvl.name}`;
-        } else if (isHndProgramme) {
-          if (num === 300 || lvl.code === "300" || lvl.id === 3) formattedLabel = `HND I (${lvl.name})`;
-          else if (num === 400 || lvl.code === "400" || lvl.id === 4) formattedLabel = `HND II (${lvl.name})`;
-          else formattedLabel = `HND - ${lvl.name}`;
-        } else {
-          // General / Polytechnic & University combined fallback
-          if (num === 100 || lvl.code === "100" || lvl.id === 1) formattedLabel = `ND I / ${lvl.name}`;
-          else if (num === 200 || lvl.code === "200" || lvl.id === 2) formattedLabel = `ND II / ${lvl.name}`;
-          else if (num === 300 || lvl.code === "300" || lvl.id === 3) formattedLabel = `HND I / ${lvl.name}`;
-          else if (num === 400 || lvl.code === "400" || lvl.id === 4) formattedLabel = `HND II / ${lvl.name}`;
-          else if (num === 500 || lvl.code === "500" || lvl.id === 5) formattedLabel = `${lvl.name} (B.Sc / B.Eng Final Year)`;
-        }
-
-        return {
-          value: String(lvl.id),
-          label: formattedLabel,
-        };
-      }),
-  ];
-
-  // Lookup active level name for display
-  const activeLevelObj = levels.find(
-    (l) => l.id === Number(profileForm.current_level)
-  );
 
   if (loading) {
     return (
@@ -1026,85 +775,20 @@ export default function ExistingStudentOnboardingPage() {
         </div>
         <h1 className={styles.title}>Digitize Your Student Record</h1>
         <p className={styles.subtitle}>
-          Migrate your polytechnic or degree records, submit archive documents for registry verification, and activate full Student Portal access.
+          Migrate your polytechnic or degree records, submit archive documents for registry
+          verification, and activate full Student Portal access.
         </p>
       </header>
 
-      {/* Desktop Stepper */}
-      <nav className={styles.stepperDesktop} aria-label="Onboarding Progress">
-        {STEPS.map((s, idx) => {
-          const active = step === s.num;
-          const completed = step > s.num || (step === 5 && s.num < 5);
-          const isClickable = s.num <= maxStepReached || (registration && s.num <= 4);
-
-          return (
-            <div key={s.num} style={{ display: "flex", alignItems: "center", flex: idx === STEPS.length - 1 ? 0 : 1 }}>
-              <button
-                type="button"
-                onClick={() => isClickable && goToStep(s.num)}
-                disabled={!isClickable}
-                className={`${styles.stepItem} ${active ? styles.stepActive : ""} ${
-                  completed ? styles.stepCompleted : ""
-                } ${isClickable ? styles.stepItemClickable : ""}`}
-                title={s.label}
-              >
-                <div className={styles.stepCircle}>
-                  {completed ? <Check size={14} strokeWidth={3} /> : s.num}
-                </div>
-                <span>{s.label}</span>
-              </button>
-              {idx < STEPS.length - 1 && (
-                <div
-                  className={`${styles.stepDivider} ${
-                    completed ? styles.stepDividerFilled : ""
-                  }`}
-                />
-              )}
-            </div>
-          );
-        })}
-      </nav>
-
-      {/* Mobile Stepper */}
-      <div className={styles.stepperMobile}>
-        <div className={styles.stepperMobileTop}>
-          <span className={styles.stepperMobileBadge}>
-            Step {step} of {STEPS.length}
-          </span>
-          <span className={styles.stepperMobileTitle}>{currentStepObj.shortTitle}</span>
-        </div>
-        <div className={styles.progressBarTrack}>
-          <div
-            className={styles.progressBarFill}
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-        <div className={styles.stepperMobileDots}>
-          {STEPS.map((s) => {
-            const isCompleted = step > s.num;
-            const isActive = step === s.num;
-            const isClickable = s.num <= maxStepReached || (registration && s.num <= 4);
-
-            return (
-              <button
-                key={s.num}
-                type="button"
-                onClick={() => isClickable && goToStep(s.num)}
-                disabled={!isClickable}
-                className={`${styles.mobileDot} ${
-                  isActive
-                    ? styles.mobileDotActive
-                    : isCompleted
-                    ? styles.mobileDotCompleted
-                    : ""
-                }`}
-              >
-                {isCompleted ? "✓" : s.num}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {/* Stepper Navigation (Desktop + Mobile) */}
+      <StepperNav
+        step={step}
+        maxStepReached={maxStepReached}
+        registration={registration}
+        onStepClick={goToStep}
+        progressPercent={progressPercent}
+        currentStepObj={currentStepObj}
+      />
 
       {/* Feedback Alerts */}
       {errorMsg && (
@@ -1120,1308 +804,103 @@ export default function ExistingStudentOnboardingPage() {
         </Alert>
       )}
 
-      {/* Datalist for Historical Sessions */}
-      <datalist id="session-datalist">
-        {sessions.map((s) => (
-          <option key={s.id} value={s.name} />
-        ))}
-      </datalist>
-
-      {/* ========================================================= */}
-      {/* STEP 1: Matric Number & Account Creation                 */}
-      {/* ========================================================= */}
+      {/* Step Components */}
       {step === 1 && (
-        <Card className={styles.card}>
-          <div className={styles.cardHead}>
-            <div className={styles.cardIconBox}>
-              <GraduationCap size={22} />
-            </div>
-            <div>
-              <h2 className={styles.cardTitle}>Step 1: Enter Your Matriculation Number</h2>
-              <p className={styles.cardDesc}>
-                Provide your existing matric number and create secure credentials for portal access.
-              </p>
-            </div>
-          </div>
-
-          {/* Mode Switcher Tabs */}
-          <div style={{
-            display: "flex",
-            gap: "8px",
-            padding: "5px",
-            background: "#f1f5f9",
-            borderRadius: "10px",
-            marginBottom: "20px"
-          }}>
-            <button
-              type="button"
-              onClick={() => { setResumeMode("new"); setErrorMsg(null); }}
-              style={{
-                flex: 1,
-                padding: "9px 14px",
-                borderRadius: "8px",
-                border: "none",
-                fontSize: "13px",
-                fontWeight: resumeMode === "new" ? 600 : 500,
-                background: resumeMode === "new" ? "#ffffff" : "transparent",
-                color: resumeMode === "new" ? "#1e3a8a" : "#64748b",
-                boxShadow: resumeMode === "new" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-                cursor: "pointer",
-                transition: "all 0.2s"
-              }}
-            >
-              First-Time Registration
-            </button>
-            <button
-              type="button"
-              onClick={() => { setResumeMode("resume"); setErrorMsg(null); }}
-              style={{
-                flex: 1,
-                padding: "9px 14px",
-                borderRadius: "8px",
-                border: "none",
-                fontSize: "13px",
-                fontWeight: resumeMode === "resume" ? 600 : 500,
-                background: resumeMode === "resume" ? "#ffffff" : "transparent",
-                color: resumeMode === "resume" ? "#1e3a8a" : "#64748b",
-                boxShadow: resumeMode === "resume" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-                cursor: "pointer",
-                transition: "all 0.2s"
-              }}
-            >
-              Resume Active Application
-            </button>
-          </div>
-
-          {resumeMode === "resume" ? (
-            /* ========================================================= */
-            /* RESUME APPLICATION / RETURNING STUDENT VIEW               */
-            /* ========================================================= */
-            <div>
-              {lookupResult ? (
-                <div style={{
-                  padding: "16px 18px",
-                  borderRadius: "10px",
-                  background: "#f0fdf4",
-                  border: "1px solid #bbf7d0",
-                  marginBottom: "20px"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                    <span style={{ fontSize: "14px", fontWeight: 700, color: "#166534" }}>
-                      Existing Record Found: {lookupResult.matric_number}
-                    </span>
-                    <Badge tone={lookupResult.status === "correction_required" ? "warning" : "info"}>
-                      {lookupResult.status_display || lookupResult.status}
-                    </Badge>
-                  </div>
-                  {lookupResult.full_name && (
-                    <p style={{ margin: "2px 0 6px 0", fontSize: "13px", color: "#15803d" }}>
-                      Student Name: <strong>{lookupResult.full_name}</strong>
-                    </p>
-                  )}
-                  {lookupResult.correction_note && (
-                    <div style={{
-                      marginTop: 8,
-                      padding: "10px 14px",
-                      borderRadius: "8px",
-                      background: "#fffbeb",
-                      border: "1px solid #fde68a",
-                      fontSize: "13px",
-                      color: "#92400e"
-                    }}>
-                      <strong style={{ display: "block", marginBottom: 3, color: "#b45309" }}>
-                        Registry Correction Instructions:
-                      </strong>
-                      <span>{lookupResult.correction_note}</span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className={styles.infoCallout} style={{ marginBottom: "20px" }}>
-                  <Info size={18} />
-                  <span>
-                    <strong>Returning Student:</strong> Enter your portal email and password to resume your registration right where you left off.
-                  </span>
-                </div>
-              )}
-
-              <form onSubmit={handleResumeRegistration} className={styles.form}>
-                {unverifiedEmail && (
-                  <div style={{
-                    padding: "14px 16px",
-                    borderRadius: "10px",
-                    background: "#fffbeb",
-                    border: "1.5px solid #f59e0b",
-                    marginBottom: "16px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px"
-                  }}>
-                    <span style={{ fontSize: "13px", fontWeight: 600, color: "#92400e" }}>
-                      Email verification pending for {unverifiedEmail}
-                    </span>
-                    <p style={{ margin: 0, fontSize: "12.5px", color: "#78350f", lineHeight: "1.5" }}>
-                      Check your email inbox for the verification link, or request a new link below:
-                    </p>
-                    <div style={{ display: "flex", gap: "10px", alignItems: "center", marginTop: "4px" }}>
-                      <Button
-                        type="button"
-                        size="sm"
-                        disabled={resending}
-                        onClick={async () => {
-                          setResending(true);
-                          try {
-                            const { resendVerification } = await import("@/services/auth");
-                            await resendVerification(unverifiedEmail);
-                            setResendSuccess("Verification email resent! Check your inbox.");
-                          } catch {
-                            setErrorMsg("Failed to resend verification email.");
-                          } finally {
-                            setResending(false);
-                          }
-                        }}
-                      >
-                        {resending ? "Sending..." : "Resend Verification Link"}
-                      </Button>
-                      <Link
-                        href={`/verify?email=${encodeURIComponent(unverifiedEmail)}`}
-                        style={{ fontSize: "12.5px", color: "#1e3a8a", textDecoration: "underline", fontWeight: 600 }}
-                      >
-                        Enter token code manually &rarr;
-                      </Link>
-                    </div>
-                    {resendSuccess && (
-                      <span style={{ fontSize: "12px", color: "#15803d", fontWeight: 600 }}>
-                        ✓ {resendSuccess}
-                      </span>
-                    )}
-                  </div>
-                )}
-                <Field label="Email Address Registered on Account" required>
-                  <Input
-                    type="email"
-                    placeholder="student@example.com"
-                    value={resumeEmail}
-                    onChange={(e) => setResumeEmail(e.target.value)}
-                    required
-                  />
-                </Field>
-
-                <Field label="Portal Password" required>
-                  <Input
-                    type="password"
-                    placeholder="Enter your password"
-                    value={resumePassword}
-                    onChange={(e) => setResumePassword(e.target.value)}
-                    required
-                  />
-                </Field>
-
-                <div className={styles.cardActions}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLookupResult(null);
-                      setResumeMode("new");
-                    }}
-                    className={styles.cancelLink}
-                    style={{ background: "none", border: "none", cursor: "pointer" }}
-                  >
-                    Start a new registration instead
-                  </button>
-                  <Button type="submit" disabled={resuming}>
-                    {resuming ? (
-                      <>
-                        <Loader2 className={styles.spinIcon} size={16} /> Resuming Dossier...
-                      </>
-                    ) : (
-                      <>
-                        Resume Application &rarr;
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </div>
-          ) : (
-            /* ========================================================= */
-            /* FIRST-TIME REGISTRATION VIEW                              */
-            /* ========================================================= */
-            <div>
-              <div className={styles.infoCallout}>
-                <Info size={18} />
-                <span>
-                  <strong>Important:</strong> Your matriculation number will be cross-referenced with Marist Polytechnic's historical records. Ensure your name and phone match your official admission credentials.
-                </span>
-              </div>
-
-              <form onSubmit={handleStartRegistration} className={styles.form}>
-                <div className={styles.formGrid2}>
-                  <Field label="Institutional Matriculation Number" required>
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      <Input
-                        placeholder="e.g. MAP/ND/CS/2022/0042"
-                        value={startForm.matric_number}
-                        onChange={(e) =>
-                          setStartForm({ ...startForm, matric_number: e.target.value.toUpperCase() })
-                        }
-                        onBlur={() => handleMatricLookup()}
-                        autoCapitalize="characters"
-                        required
-                        style={{ flex: 1 }}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={lookupLoading || !startForm.matric_number.trim()}
-                        onClick={() => handleMatricLookup()}
-                        style={{ whiteSpace: "nowrap" }}
-                      >
-                        {lookupLoading ? <Loader2 className={styles.spinIcon} size={14} /> : "Check"}
-                      </Button>
-                    </div>
-                  </Field>
-                  <Field label="Phone Number" required>
-                    <Input
-                      type="tel"
-                      placeholder="e.g. 08012345678"
-                      value={startForm.phone}
-                      onChange={(e) =>
-                        setStartForm({ ...startForm, phone: e.target.value })
-                      }
-                      required
-                    />
-                  </Field>
-                </div>
-
-                <div className={styles.formGrid2}>
-                  <Field label="First Name" required>
-                    <Input
-                      placeholder="First name"
-                      value={startForm.first_name}
-                      onChange={(e) =>
-                        setStartForm({ ...startForm, first_name: e.target.value })
-                      }
-                      required
-                    />
-                  </Field>
-                  <Field label="Last Name" required>
-                    <Input
-                      placeholder="Last name"
-                      value={startForm.last_name}
-                      onChange={(e) =>
-                        setStartForm({ ...startForm, last_name: e.target.value })
-                      }
-                      required
-                    />
-                  </Field>
-                </div>
-
-                <Field label="Email Address (Used for Login & Registry Notifications)" required>
-                  <Input
-                    type="email"
-                    placeholder="student@example.com"
-                    value={startForm.email}
-                    onChange={(e) =>
-                      setStartForm({ ...startForm, email: e.target.value })
-                    }
-                    required
-                  />
-                </Field>
-
-                <div className={styles.formGrid2}>
-                  <Field label="Portal Password" required>
-                    <Input
-                      type="password"
-                      placeholder="At least 8 characters"
-                      value={startForm.password}
-                      onChange={(e) =>
-                        setStartForm({ ...startForm, password: e.target.value })
-                      }
-                      required
-                    />
-                  </Field>
-
-                  <Field label="Confirm Password" required>
-                    <Input
-                      type="password"
-                      placeholder="Re-enter password"
-                      value={startForm.password_confirm}
-                      onChange={(e) =>
-                        setStartForm({
-                          ...startForm,
-                          password_confirm: e.target.value,
-                        })
-                      }
-                      required
-                    />
-                  </Field>
-                </div>
-
-                <div className={styles.cardActions}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (startForm.email) setResumeEmail(startForm.email);
-                      setResumeMode("resume");
-                    }}
-                    className={styles.cancelLink}
-                    style={{ background: "none", border: "none", cursor: "pointer" }}
-                  >
-                    Already registered? Resume application &rarr;
-                  </button>
-                  <Button type="submit" disabled={submitting}>
-                    {submitting ? (
-                      <>
-                        <Loader2 className={styles.spinIcon} size={16} /> Validating Record...
-                      </>
-                    ) : (
-                      <>
-                        Start Onboarding <ArrowRight size={16} />
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </div>
-          )}
-        </Card>
+        <Step1Account
+          resumeMode={resumeMode}
+          setResumeMode={setResumeMode}
+          lookupResult={lookupResult}
+          setLookupResult={setLookupResult}
+          lookupLoading={lookupLoading}
+          handleMatricLookup={handleMatricLookup}
+          resumeEmail={resumeEmail}
+          setResumeEmail={setResumeEmail}
+          resumePassword={resumePassword}
+          setResumePassword={setResumePassword}
+          resuming={resuming}
+          unverifiedEmail={unverifiedEmail}
+          handleResumeRegistration={handleResumeRegistration}
+          startForm={startForm}
+          setStartForm={setStartForm}
+          submitting={submitting}
+          handleStartRegistration={handleStartRegistration}
+          setErrorMsg={setErrorMsg}
+        />
       )}
 
-      {/* ========================================================= */}
-      {/* STEP 2: Personal, Academic & Guardian Information        */}
-      {/* ========================================================= */}
       {step === 2 && (
-        <Card className={styles.card}>
-          <div className={styles.cardHead}>
-            <div className={styles.cardIconBox}>
-              <User size={22} />
-            </div>
-            <div>
-              <h2 className={styles.cardTitle}>Step 2: Personal & Academic Details</h2>
-              <p className={styles.cardDesc}>
-                Select your Faculty/School, Department, Programme, enter your Admission Session, and choose your academic level.
-              </p>
-            </div>
-          </div>
-
-          {registration?.matric_number && (
-            <div className={styles.claimBanner}>
-              <span className={styles.claimLabel}>Matriculation Claim:</span>
-              <span className={styles.claimValue}>{registration.matric_number}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSaveProfile} className={styles.form}>
-            {/* Academic Enrolment Details */}
-            <div className={styles.formSection}>
-              <div className={styles.sectionHeader}>
-                <GraduationCap size={16} />
-                <span>Academic Enrolment & Placement</span>
-              </div>
-
-              {/* Faculty / School and Department (Cascading Dropdowns) */}
-              <div className={styles.formGrid2}>
-                <Field label="Faculty / School" required>
-                  <Select
-                    value={selectedSchoolId ? String(selectedSchoolId) : ""}
-                    onChange={(e) => {
-                      const newSchoolId = Number(e.target.value) || "";
-                      setSelectedSchoolId(newSchoolId);
-                      setSelectedDepartmentId("");
-                      setProfileForm((prev) => ({ ...prev, programme: undefined }));
-                    }}
-                    options={[
-                      { value: "", label: "Select Faculty / School" },
-                      ...schools.map((s) => ({
-                        value: String(s.id),
-                        label: s.name,
-                      })),
-                    ]}
-                    required
-                  />
-                </Field>
-
-                <Field label="Department" required>
-                  <Select
-                    value={selectedDepartmentId ? String(selectedDepartmentId) : ""}
-                    onChange={(e) => {
-                      const newDeptId = Number(e.target.value) || "";
-                      setSelectedDepartmentId(newDeptId);
-                      if (newDeptId) {
-                        const dept = departments.find((d) => d.id === newDeptId);
-                        if (dept && (!selectedSchoolId || selectedSchoolId !== dept.schoolId)) {
-                          setSelectedSchoolId(dept.schoolId);
-                        }
-                      }
-                      setProfileForm((prev) => ({ ...prev, programme: undefined }));
-                    }}
-                    options={[
-                      {
-                        value: "",
-                        label: selectedSchoolId
-                          ? "Select Department"
-                          : "Select School first or pick Department",
-                      },
-                      ...filteredDepartments.map((d) => ({
-                        value: String(d.id),
-                        label: d.name,
-                      })),
-                    ]}
-                    required
-                  />
-                </Field>
-              </div>
-
-              {/* Programme, Session (Section Input), and Live Backend Levels */}
-              <div className={styles.formGrid3}>
-                <Field label="Programme of Study" required>
-                  <Select
-                    value={profileForm.programme ? String(profileForm.programme) : ""}
-                    onChange={(e) => {
-                      const newProgId = Number(e.target.value) || undefined;
-                      const prog = programmes.find((p) => p.id === newProgId);
-
-                      // Check if existing level selection is valid for the new programme
-                      let updatedLevel = profileForm.current_level;
-                      if (prog && updatedLevel) {
-                        const lvlObj = levels.find((l) => l.id === updatedLevel);
-                        const lvlNum =
-                          lvlObj?.numeric_value ||
-                          parseInt(lvlObj?.code || "", 10) ||
-                          lvlObj?.id ||
-                          0;
-                        if (prog.type === "ND" && (lvlNum > 200 || updatedLevel > 2)) {
-                          updatedLevel = undefined;
-                        } else if (prog.type === "HND" && (lvlNum < 300 || lvlNum > 400)) {
-                          updatedLevel = undefined;
-                        }
-                      }
-
-                      setProfileForm((prev) => ({
-                        ...prev,
-                        programme: newProgId,
-                        current_level: updatedLevel,
-                      }));
-
-                      if (newProgId && prog) {
-                        setSelectedDepartmentId(prog.departmentId);
-                        setSelectedSchoolId(prog.schoolId);
-                      }
-                    }}
-                    options={[
-                      {
-                        value: "",
-                        label: selectedDepartmentId
-                          ? "Select Programme"
-                          : "Select Department first or pick Programme",
-                      },
-                      ...filteredProgrammes.map((p) => ({
-                        value: String(p.id),
-                        label: `${p.name} (${p.type || "ND"})`,
-                      })),
-                    ]}
-                    required
-                  />
-                </Field>
-
-                {/* Admission Session Input with DataList for Historical / Custom Sessions */}
-                <Field label="Admission Session (Year of Entry)" required>
-                  <Input
-                    type="text"
-                    list="session-datalist"
-                    placeholder="e.g. 2021/2022, 2019/2020"
-                    value={sessionInputText}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setSessionInputText(val);
-                      const matched = sessions.find(
-                        (s) => s.name.toLowerCase() === val.trim().toLowerCase()
-                      );
-                      setProfileForm((prev) => ({
-                        ...prev,
-                        admission_session: matched ? Number(matched.id) : prev.admission_session,
-                      }));
-                    }}
-                    required
-                  />
-                </Field>
-
-                {/* Current Level loaded directly from backend Level objects */}
-                <Field label="Current Academic Level" required>
-                  <Select
-                    value={profileForm.current_level ? String(profileForm.current_level) : ""}
-                    onChange={(e) =>
-                      setProfileForm({
-                        ...profileForm,
-                        current_level: Number(e.target.value) || undefined,
-                      })
-                    }
-                    options={levelSelectOptions}
-                    required
-                  />
-                </Field>
-              </div>
-            </div>
-
-            {/* Personal & Contact Information */}
-            <div className={styles.formSection}>
-              <div className={styles.sectionHeader}>
-                <User size={16} />
-                <span>Personal & Contact Information</span>
-              </div>
-
-              <div className={styles.formGrid3}>
-                <Field label="First Name" required>
-                  <Input
-                    placeholder="e.g. John"
-                    value={profileForm.first_name || ""}
-                    onChange={(e) =>
-                      setProfileForm({ ...profileForm, first_name: e.target.value })
-                    }
-                    required
-                  />
-                </Field>
-
-                <Field label="Middle Name">
-                  <Input
-                    placeholder="e.g. Chukwu"
-                    value={profileForm.middle_name || ""}
-                    onChange={(e) =>
-                      setProfileForm({ ...profileForm, middle_name: e.target.value })
-                    }
-                  />
-                </Field>
-
-                <Field label="Last Name" required>
-                  <Input
-                    placeholder="e.g. Okoro"
-                    value={profileForm.last_name || ""}
-                    onChange={(e) =>
-                      setProfileForm({ ...profileForm, last_name: e.target.value })
-                    }
-                    required
-                  />
-                </Field>
-              </div>
-
-              <div className={styles.formGrid3}>
-                <Field label="Date of Birth" required>
-                  <Input
-                    type="date"
-                    value={profileForm.date_of_birth || ""}
-                    onChange={(e) =>
-                      setProfileForm({
-                        ...profileForm,
-                        date_of_birth: e.target.value,
-                      })
-                    }
-                    required
-                  />
-                </Field>
-
-                <Field label="Gender" required>
-                  <Select
-                    value={profileForm.gender || "male"}
-                    onChange={(e) =>
-                      setProfileForm({ ...profileForm, gender: e.target.value })
-                    }
-                    options={GENDER_OPTIONS}
-                    required
-                  />
-                </Field>
-
-                <Field label="Marital Status" required>
-                  <Select
-                    value={profileForm.marital_status || "single"}
-                    onChange={(e) =>
-                      setProfileForm({
-                        ...profileForm,
-                        marital_status: e.target.value,
-                      })
-                    }
-                    options={MARITAL_OPTIONS}
-                    required
-                  />
-                </Field>
-              </div>
-
-              <div className={styles.formGrid3}>
-                <Field label="Phone Number" required>
-                  <Input
-                    type="tel"
-                    placeholder="e.g. 08012345678"
-                    value={profileForm.phone || ""}
-                    onChange={(e) =>
-                      setProfileForm({ ...profileForm, phone: e.target.value })
-                    }
-                    required
-                  />
-                </Field>
-
-                <Field label="Email Address" required>
-                  <Input
-                    type="email"
-                    placeholder="student@example.com"
-                    value={profileForm.email || ""}
-                    onChange={(e) =>
-                      setProfileForm({ ...profileForm, email: e.target.value })
-                    }
-                    required
-                  />
-                </Field>
-
-                <Field label="Religion" required>
-                  <Select
-                    value={profileForm.religion || "Christianity"}
-                    onChange={(e) =>
-                      setProfileForm({
-                        ...profileForm,
-                        religion: e.target.value,
-                      })
-                    }
-                    options={RELIGION_OPTIONS}
-                    required
-                  />
-                </Field>
-              </div>
-
-              <div className={styles.formGrid3}>
-                <Field label="Nationality" required>
-                  <Input
-                    placeholder="e.g. Nigerian"
-                    value={profileForm.nationality || "Nigerian"}
-                    onChange={(e) =>
-                      setProfileForm({
-                        ...profileForm,
-                        nationality: e.target.value,
-                      })
-                    }
-                    required
-                  />
-                </Field>
-
-                <Field label="State of Origin" required>
-                  <Select
-                    value={profileForm.state_of_origin || "Enugu"}
-                    onChange={(e) =>
-                      setProfileForm({
-                        ...profileForm,
-                        state_of_origin: e.target.value,
-                      })
-                    }
-                    options={NIGERIAN_STATES.map((st) => ({
-                      value: st,
-                      label: st,
-                    }))}
-                    required
-                  />
-                </Field>
-
-                <Field label="Local Government Area (LGA)" required>
-                  <Input
-                    placeholder="e.g. Nkanu West"
-                    value={profileForm.lga || ""}
-                    onChange={(e) =>
-                      setProfileForm({ ...profileForm, lga: e.target.value })
-                    }
-                    required
-                  />
-                </Field>
-              </div>
-
-              <Field label="Residential Address" required>
-                <Input
-                  placeholder="e.g. 12 Ogui Road, Enugu"
-                  value={profileForm.address || ""}
-                  onChange={(e) =>
-                    setProfileForm({ ...profileForm, address: e.target.value })
-                  }
-                  required
-                />
-              </Field>
-            </div>
-
-            {/* Next of Kin / Guardian Information */}
-            <div className={styles.formSection}>
-              <div className={styles.sectionHeader}>
-                <Users size={16} />
-                <span>Next of Kin / Guardian Details</span>
-              </div>
-
-              <div className={styles.formGrid3}>
-                <Field label="Guardian Full Name" required>
-                  <Input
-                    placeholder="e.g. Chief B. Okonkwo"
-                    value={profileForm.guardian_name || ""}
-                    onChange={(e) =>
-                      setProfileForm({
-                        ...profileForm,
-                        guardian_name: e.target.value,
-                      })
-                    }
-                    required
-                  />
-                </Field>
-
-                <Field label="Relationship to Student" required>
-                  <Select
-                    value={profileForm.guardian_relationship || "Parent"}
-                    onChange={(e) =>
-                      setProfileForm({
-                        ...profileForm,
-                        guardian_relationship: e.target.value,
-                      })
-                    }
-                    options={RELATIONSHIP_OPTIONS}
-                    required
-                  />
-                </Field>
-
-                <Field label="Guardian Phone Number" required>
-                  <Input
-                    type="tel"
-                    placeholder="e.g. 08031234567"
-                    value={profileForm.guardian_phone || ""}
-                    onChange={(e) =>
-                      setProfileForm({
-                        ...profileForm,
-                        guardian_phone: e.target.value,
-                      })
-                    }
-                    required
-                  />
-                </Field>
-              </div>
-            </div>
-
-            <div className={styles.cardActions}>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setStep(1)}
-              >
-                <ArrowLeft size={16} /> Back
-              </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? (
-                  <>
-                    <Loader2 className={styles.spinIcon} size={16} /> Saving Details...
-                  </>
-                ) : (
-                  <>
-                    Continue to Document Uploads <ArrowRight size={16} />
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
-        </Card>
+        <Step2Profile
+          registration={registration}
+          profileForm={profileForm}
+          setProfileForm={setProfileForm}
+          schools={schools}
+          departments={departments}
+          programmes={programmes}
+          levels={levels}
+          sessions={sessions}
+          selectedSchoolId={selectedSchoolId}
+          setSelectedSchoolId={setSelectedSchoolId}
+          selectedDepartmentId={selectedDepartmentId}
+          setSelectedDepartmentId={setSelectedDepartmentId}
+          sessionInputText={sessionInputText}
+          setSessionInputText={setSessionInputText}
+          submitting={submitting}
+          onBack={() => setStep(1)}
+          onSubmit={handleSaveProfile}
+        />
       )}
 
-      {/* ========================================================= */}
-      {/* STEP 3: Required Supporting Documents Checklist          */}
-      {/* ========================================================= */}
       {step === 3 && (
-        <Card className={styles.card}>
-          <div className={styles.cardHead}>
-            <div className={styles.cardIconBox}>
-              <UploadCloud size={22} />
-            </div>
-            <div>
-              <h2 className={styles.cardTitle}>Step 3: Upload Supporting Documents</h2>
-              <p className={styles.cardDesc}>
-                Upload clear scans or photos of your credentials for verification against school physical archives.
-              </p>
-            </div>
-          </div>
-
-          {/* Registry Correction Instructions Callout (if active) */}
-          {registration?.correction_note && (
-            <div style={{
-              marginBottom: "20px",
-              padding: "16px 20px",
-              borderRadius: "12px",
-              background: "#fffbeb",
-              border: "1.5px solid #f59e0b",
-              color: "#92400e"
-            }}>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                <AlertCircle size={22} style={{ color: "#d97706", flexShrink: 0, marginTop: 2 }} />
-                <div>
-                  <h4 style={{ margin: "0 0 6px 0", fontSize: "15px", fontWeight: 700, color: "#b45309" }}>
-                    Registry Correction Instructions
-                  </h4>
-                  <p style={{ margin: 0, fontSize: "13.5px", lineHeight: "1.55", color: "#78350f" }}>
-                    {registration.correction_note}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Upload Progress Status Banner */}
-          {(() => {
-            const activeRequirementsList =
-              requirements.length > 0 ? requirements : DEFAULT_FALLBACK_REQUIREMENTS;
-            const requiredRequirements = activeRequirementsList.filter(
-              (item) => item.requirement.required
-            );
-            const uploadedRequiredCount = requiredRequirements.filter(
-              (item) => item.document && Boolean(item.document.id)
-            ).length;
-            const totalRequiredCount = requiredRequirements.length;
-            const allRequiredUploaded =
-              totalRequiredCount > 0 && uploadedRequiredCount === totalRequiredCount;
-
-            return (
-              <>
-                <div className={styles.docSummaryBanner}>
-                  <Alert
-                    tone={allRequiredUploaded ? "success" : "info"}
-                    title={
-                      allRequiredUploaded
-                        ? "All required documents uploaded"
-                        : `${uploadedRequiredCount} of ${totalRequiredCount} required documents uploaded`
-                    }
-                  >
-                    {allRequiredUploaded
-                      ? "You can replace any file before submitting your application to the Registry."
-                      : "Upload every required document to continue. Optional documents can be added if you have them."}
-                  </Alert>
-                </div>
-
-                <div className={styles.docList}>
-                  {activeRequirementsList.map((item) => {
-                    const req = item.requirement;
-                    const doc = item.document;
-                    const isUploading = uploadingDocId === req.id;
-                    const allowedExts =
-                      req.allowed_extensions ||
-                      (req.allowed_file_types
-                        ? req.allowed_file_types
-                            .split(",")
-                            .map((s) => s.trim().toLowerCase().replace(/^\./, ""))
-                        : null) ||
-                      req.allowed_formats || ["pdf", "jpg", "jpeg", "png"];
-                    const acceptStr = allowedExts.map((e) => `.${e}`).join(",");
-                    const typesUpper = allowedExts.map((e) => e.toUpperCase()).join(", ");
-                    const maxMb =
-                      req.max_size_mb ||
-                      (req.max_file_size
-                        ? Math.round(req.max_file_size / (1024 * 1024))
-                        : 5);
-
-                    return (
-                      <div
-                        key={req.id}
-                        className={`${styles.docItem} ${doc ? styles.docItemUploaded : ""}`}
-                      >
-                        <div className={styles.docHeaderRow}>
-                          <div className={styles.docTitleBox}>
-                            <div className={styles.docTitleWithBadge}>
-                              <span className={styles.docName}>{req.name}</span>
-                              <Badge tone={req.required ? "info" : "neutral"}>
-                                {req.required ? "Required" : "Optional"}
-                              </Badge>
-                            </div>
-                            {req.description && (
-                              <p className={styles.docDescription}>{req.description}</p>
-                            )}
-                            <span className={styles.docMeta}>
-                              Accepted Formats: {typesUpper} · Max {maxMb}MB
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Uploaded File Row */}
-                        {doc && (
-                          <div className={styles.docUploadedBox}>
-                            <div className={styles.docFileInfo}>
-                              <div className={styles.docFileIcon}>
-                                <FileCheck size={20} />
-                              </div>
-                              <div className={styles.docFileDetails}>
-                                <span className={styles.fileName} title={doc.original_filename}>
-                                  {doc.original_filename || "Uploaded Document"}
-                                </span>
-                                <span className={styles.docUploadMeta}>
-                                  Uploaded on {new Date(doc.created_at || Date.now()).toLocaleDateString()}
-                                </span>
-                              </div>
-                              <div className={styles.docStatusBadge}>
-                                <DocStatusTag status={doc.status} />
-                              </div>
-                            </div>
-
-                            <button
-                              type="button"
-                              className={styles.deleteIconButton}
-                              onClick={() => handleDeleteDocument(doc.id)}
-                              title="Remove document"
-                            >
-                              <Trash2 size={15} /> <span>Remove</span>
-                            </button>
-                          </div>
-                        )}
-
-                        {/* Dropzone Upload Component */}
-                        <div className={styles.docUploadArea}>
-                          <FileUpload
-                            disabled={isUploading}
-                            loading={isUploading}
-                            accept={acceptStr}
-                            onSelect={(file) => handleFileUpload(req.id, file)}
-                            hint={
-                              <>
-                                {typesUpper} up to {maxMb} MB
-                                {doc && " · uploading a new file replaces the current one"}
-                              </>
-                            }
-                          />
-                        </div>
-
-                        {doc?.review_comment && (
-                          <div className={styles.docReviewNote}>
-                            <strong>Registry Note:</strong> {doc.review_comment}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            );
-          })()}
-
-          <div className={styles.cardActions}>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setStep(2)}
-            >
-              <ArrowLeft size={16} /> Back to Profile
-            </Button>
-            <Button
-              type="button"
-              onClick={() => {
-                setMaxStepReached((prev) => Math.max(prev, 4));
-                setStep(4);
-              }}
-            >
-              Review & Submit <ArrowRight size={16} />
-            </Button>
-          </div>
-        </Card>
+        <Step3Documents
+          registration={registration}
+          requirements={requirements}
+          uploadingDocId={uploadingDocId}
+          handleFileUpload={handleFileUpload}
+          handleDeleteDocument={handleDeleteDocument}
+          onBack={() => setStep(2)}
+          onNext={() => {
+            setMaxStepReached((prev) => Math.max(prev, 4));
+            setStep(4);
+          }}
+        />
       )}
 
-      {/* ========================================================= */}
-      {/* STEP 4: Review and Declaration Submission               */}
-      {/* ========================================================= */}
       {step === 4 && (
-        <Card className={styles.card}>
-          <div className={styles.cardHead}>
-            <div className={styles.cardIconBox}>
-              <FileCheck size={22} />
-            </div>
-            <div>
-              <h2 className={styles.cardTitle}>Step 4: Review Claim & Submit for Verification</h2>
-              <p className={styles.cardDesc}>
-                Double-check your academic claim before sending it to the Registry.
-              </p>
-            </div>
-          </div>
-
-          <div className={styles.summaryGrid}>
-            {/* Identity & Personal Info */}
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryCardTitle}>
-                <User size={15} />
-                <span>Identity & Personal Details</span>
-              </div>
-              <div className={styles.summaryRow}>
-                <span className={styles.summaryKey}>Matric Number:</span>
-                <span className={styles.summaryVal}>{registration?.matric_number || startForm.matric_number}</span>
-              </div>
-              <div className={styles.summaryRow}>
-                <span className={styles.summaryKey}>Full Name:</span>
-                <span className={styles.summaryVal}>
-                  {profileForm.first_name} {profileForm.middle_name ? `${profileForm.middle_name} ` : ""}{profileForm.last_name}
-                </span>
-              </div>
-              <div className={styles.summaryRow}>
-                <span className={styles.summaryKey}>Date of Birth:</span>
-                <span className={styles.summaryVal}>{profileForm.date_of_birth || "Not set"}</span>
-              </div>
-              <div className={styles.summaryRow}>
-                <span className={styles.summaryKey}>Gender & Marital:</span>
-                <span className={styles.summaryVal}>
-                  {profileForm.gender?.toUpperCase()}, {profileForm.marital_status?.toUpperCase()}
-                </span>
-              </div>
-              <div className={styles.summaryRow}>
-                <span className={styles.summaryKey}>Phone & Email:</span>
-                <span className={styles.summaryVal}>
-                  {profileForm.phone} / {profileForm.email}
-                </span>
-              </div>
-              <div className={styles.summaryRow}>
-                <span className={styles.summaryKey}>Origin & LGA:</span>
-                <span className={styles.summaryVal}>
-                  {profileForm.state_of_origin}, {profileForm.lga}
-                </span>
-              </div>
-              <div className={styles.summaryRow}>
-                <span className={styles.summaryKey}>Residential Address:</span>
-                <span className={styles.summaryVal}>{profileForm.address || "Not set"}</span>
-              </div>
-            </div>
-
-            {/* Academic Claims */}
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryCardTitle}>
-                <GraduationCap size={15} />
-                <span>Academic & Placement Claims</span>
-              </div>
-              <div className={styles.summaryRow}>
-                <span className={styles.summaryKey}>Faculty / School:</span>
-                <span className={styles.summaryVal}>
-                  {activeSchool?.name || registration?.school_name || "Not specified"}
-                </span>
-              </div>
-              <div className={styles.summaryRow}>
-                <span className={styles.summaryKey}>Department:</span>
-                <span className={styles.summaryVal}>
-                  {activeDept?.name || registration?.department_name || "Not specified"}
-                </span>
-              </div>
-              <div className={styles.summaryRow}>
-                <span className={styles.summaryKey}>Programme:</span>
-                <span className={styles.summaryVal}>
-                  {activeProg ? `${activeProg.name} (${activeProg.type})` : registration?.programme_name || "Not specified"}
-                </span>
-              </div>
-              <div className={styles.summaryRow}>
-                <span className={styles.summaryKey}>Admission Session:</span>
-                <span className={styles.summaryVal}>
-                  {sessionInputText ||
-                    sessions.find((s) => s.id === String(profileForm.admission_session))?.name ||
-                    registration?.admission_session_name ||
-                    "Not specified"}
-                </span>
-              </div>
-              <div className={styles.summaryRow}>
-                <span className={styles.summaryKey}>Current Level:</span>
-                <span className={styles.summaryVal}>
-                  {activeLevelObj?.name ||
-                    registration?.current_level_name ||
-                    "Not specified"}
-                </span>
-              </div>
-              <div className={styles.summaryRow}>
-                <span className={styles.summaryKey}>Guardian:</span>
-                <span className={styles.summaryVal}>
-                  {profileForm.guardian_name} ({profileForm.guardian_relationship}) - {profileForm.guardian_phone}
-                </span>
-              </div>
-            </div>
-
-            {/* Uploaded Documents Summary */}
-            <div className={styles.summaryCard} style={{ gridColumn: "1 / -1" }}>
-              <div className={styles.summaryCardTitle}>
-                <FileCheck size={15} />
-                <span>Uploaded Documents & Credentials</span>
-              </div>
-              <div className={styles.formGrid2}>
-                {(requirements.length > 0 ? requirements : DEFAULT_FALLBACK_REQUIREMENTS).map((item) => (
-                  <div key={item.requirement.id} className={styles.summaryRow}>
-                    <span className={styles.summaryKey}>{item.requirement.name}:</span>
-                    <span className={styles.summaryVal}>
-                      {item.document ? (
-                        <span style={{ color: "#059669", fontWeight: 600 }}>✓ Uploaded ({item.document.original_filename})</span>
-                      ) : item.requirement.required ? (
-                        <span style={{ color: "#dc2626", fontWeight: 600 }}>✗ Not Uploaded (Required)</span>
-                      ) : (
-                        <span style={{ color: "#64748b" }}>Not uploaded (Optional)</span>
-                      )}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Missing Checklist Guard */}
-          {registration?.missing &&
-            (registration.missing.fields.length > 0 ||
-              registration.missing.documents.length > 0) && (
-              <div className={styles.missingBox}>
-                <div className={styles.missingHead}>
-                  <AlertCircle size={18} />
-                  <span>Incomplete Submission Warning</span>
-                </div>
-                {registration.missing.fields.length > 0 && (
-                  <p>Missing profile fields: {registration.missing.fields.join(", ")}</p>
-                )}
-                {registration.missing.documents.length > 0 && (
-                  <p>Missing documents: {registration.missing.documents.join(", ")}</p>
-                )}
-              </div>
-            )}
-
-          {/* Declaration Checkbox */}
-          <div className={styles.declarationBox}>
-            <label className={styles.checkboxLabel}>
-              <input
-                type="checkbox"
-                className={styles.checkboxInput}
-                checked={declarationAccepted}
-                onChange={(e) => setDeclarationAccepted(e.target.checked)}
-              />
-              <span>
-                I solemnly declare that all information provided and documents uploaded are authentic, correct, and represent my true academic records at Marist Polytechnic. I understand that fraudulent claims are subject to immediate disqualification and disciplinary action.
-              </span>
-            </label>
-          </div>
-
-          <div className={styles.cardActions}>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setStep(3)}
-            >
-              <ArrowLeft size={16} /> Back to Documents
-            </Button>
-            <Button
-              type="button"
-              disabled={submitting || !declarationAccepted}
-              onClick={handleSubmitDossier}
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className={styles.spinIcon} size={16} /> Submitting Dossier...
-                </>
-              ) : (
-                <>
-                  <Send size={16} /> Submit for Verification
-                </>
-              )}
-            </Button>
-          </div>
-        </Card>
+        <Step4Review
+          registration={registration}
+          startForm={startForm}
+          profileForm={profileForm}
+          schools={schools}
+          departments={departments}
+          programmes={programmes}
+          levels={levels}
+          sessions={sessions}
+          sessionInputText={sessionInputText}
+          selectedSchoolId={selectedSchoolId}
+          selectedDepartmentId={selectedDepartmentId}
+          requirements={requirements}
+          declarationAccepted={declarationAccepted}
+          setDeclarationAccepted={setDeclarationAccepted}
+          submitting={submitting}
+          onBack={() => setStep(3)}
+          onSubmit={handleSubmitDossier}
+        />
       )}
 
-      {/* ========================================================= */}
-      {/* STEP 5: Live Dossier Status Tracker & Outcome            */}
-      {/* ========================================================= */}
       {step === 5 && (
-        <Card className={styles.card}>
-          <div className={styles.statusHero}>
-            <div
-              className={`${styles.statusHeroBadge} ${
-                styles[registration?.status || "submitted"]
-              }`}
-            >
-              {registration?.status === "submitted" && <Clock size={18} />}
-              {registration?.status === "under_review" && (
-                <RefreshCw size={18} className={styles.spinIcon} />
-              )}
-              {registration?.status === "correction_required" && <AlertCircle size={18} />}
-              {registration?.status === "approved" && <CheckCircle2 size={18} />}
-              <span>{registration?.status_display || registration?.status?.toUpperCase() || "SUBMITTED"}</span>
-            </div>
-
-            <h2 className={styles.statusTitle}>
-              {registration?.status === "approved"
-                ? "Your Student Record Has Been Approved & Activated!"
-                : registration?.status === "under_review"
-                ? "Dossier Under Verification Against Physical Archives"
-                : registration?.status === "correction_required"
-                ? "Registry Requested Updates / Corrections"
-                : "Application Submitted to Registry"}
-            </h2>
-
-            <p className={styles.statusMessage}>
-              {registration?.status === "approved"
-                ? "Your official student profile and portal credentials have been fully activated. You now have full access to course registration, results, fee receipts, and student services."
-                : registration?.status === "correction_required"
-                ? `Correction instructions: ${
-                    registration?.correction_note || "Please update your details and resubmit."
-                  }`
-                : "Our verification team is cross-checking your submitted matriculation number and credentials against institutional archives. You will be notified once approved."}
-            </p>
-
-            <div className={styles.statusActions}>
-              {registration?.status === "approved" ? (
-                <Button
-                  size="lg"
-                  onClick={() => router.push("/student/dashboard")}
-                >
-                  Proceed to Student Portal <ArrowRight size={18} />
-                </Button>
-              ) : registration?.status === "correction_required" ? (
-                <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
-                  <Button
-                    onClick={() => setStep(3)}
-                  >
-                    Re-upload Documents (Step 3) <ArrowRight size={16} />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setStep(2)}
-                  >
-                    Review Profile (Step 2)
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  onClick={async () => {
-                    setLoading(true);
-                    const reg = await getMyLegacyRegistration();
-                    setRegistration(reg);
-                    await reloadRequirementsAndTimeline();
-                    setLoading(false);
-                  }}
-                >
-                  <RefreshCw size={16} /> Refresh Status
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Audit Timeline */}
-          {timeline.length > 0 && (
-            <div className={styles.timelineSection}>
-              <div className={styles.timelineTitle}>
-                <Clock size={16} />
-                <span>Verification Activity Log</span>
-              </div>
-              <div className={styles.timelineList}>
-                {timeline.map((item) => (
-                  <div key={item.id} className={styles.timelineItem}>
-                    <div className={styles.timelinePoint} />
-                    <div className={styles.timelineContent}>
-                      <div className={styles.timelineHead}>
-                        <strong>{item.action.replace(/_/g, " ").toUpperCase()}</strong>
-                        <span className={styles.timelineDate}>
-                          {new Date(item.created_at).toLocaleString()}
-                        </span>
-                      </div>
-                      {item.note && <p className={styles.timelineNote}>{item.note}</p>}
-                      {item.actor_email && (
-                        <span className={styles.timelineActor}>
-                          Logged by {item.actor_email}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </Card>
+        <Step5Status
+          registration={registration}
+          timeline={timeline}
+          onRefresh={async () => {
+            setLoading(true);
+            const reg = await getMyLegacyRegistration();
+            setRegistration(reg);
+            await reloadRequirementsAndTimeline();
+            setLoading(false);
+          }}
+          onReUpload={() => setStep(3)}
+          onReviewProfile={() => setStep(2)}
+        />
       )}
     </div>
   );
