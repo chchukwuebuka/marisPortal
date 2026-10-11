@@ -82,6 +82,7 @@ export interface LegacyRegistrationDetail {
   programme_name: string;
   department_name: string;
   school_name: string;
+  faculty_name?: string;
   admission_session: number | null;
   admission_session_name: string;
   current_level: number | null;
