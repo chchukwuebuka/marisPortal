@@ -1134,120 +1134,297 @@ export default function ExistingStudentOnboardingPage() {
             </div>
           </div>
 
-          <div className={styles.infoCallout}>
-            <Info size={18} />
-            <span>
-              <strong>Important:</strong> Your matriculation number will be cross-referenced with Marist Polytechnic's historical records. Ensure your name and phone match your official admission credentials.
-            </span>
+          {/* Mode Switcher Tabs */}
+          <div style={{
+            display: "flex",
+            gap: "8px",
+            padding: "5px",
+            background: "#f1f5f9",
+            borderRadius: "10px",
+            marginBottom: "20px"
+          }}>
+            <button
+              type="button"
+              onClick={() => { setResumeMode("new"); setErrorMsg(null); }}
+              style={{
+                flex: 1,
+                padding: "9px 14px",
+                borderRadius: "8px",
+                border: "none",
+                fontSize: "13px",
+                fontWeight: resumeMode === "new" ? 600 : 500,
+                background: resumeMode === "new" ? "#ffffff" : "transparent",
+                color: resumeMode === "new" ? "#1e3a8a" : "#64748b",
+                boxShadow: resumeMode === "new" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                cursor: "pointer",
+                transition: "all 0.2s"
+              }}
+            >
+              First-Time Registration
+            </button>
+            <button
+              type="button"
+              onClick={() => { setResumeMode("resume"); setErrorMsg(null); }}
+              style={{
+                flex: 1,
+                padding: "9px 14px",
+                borderRadius: "8px",
+                border: "none",
+                fontSize: "13px",
+                fontWeight: resumeMode === "resume" ? 600 : 500,
+                background: resumeMode === "resume" ? "#ffffff" : "transparent",
+                color: resumeMode === "resume" ? "#1e3a8a" : "#64748b",
+                boxShadow: resumeMode === "resume" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                cursor: "pointer",
+                transition: "all 0.2s"
+              }}
+            >
+              Resume Active Application
+            </button>
           </div>
 
-          <form onSubmit={handleStartRegistration} className={styles.form}>
-            <div className={styles.formGrid2}>
-              <Field label="Institutional Matriculation Number" required>
-                <Input
-                  placeholder="e.g. MAP/ND/CS/2022/0042"
-                  value={startForm.matric_number}
-                  onChange={(e) =>
-                    setStartForm({ ...startForm, matric_number: e.target.value.toUpperCase() })
-                  }
-                  autoCapitalize="characters"
-                  required
-                />
-              </Field>
-              <Field label="Phone Number" required>
-                <Input
-                  type="tel"
-                  placeholder="e.g. 08012345678"
-                  value={startForm.phone}
-                  onChange={(e) =>
-                    setStartForm({ ...startForm, phone: e.target.value })
-                  }
-                  required
-                />
-              </Field>
+          {resumeMode === "resume" ? (
+            /* ========================================================= */
+            /* RESUME APPLICATION / RETURNING STUDENT VIEW               */
+            /* ========================================================= */
+            <div>
+              {lookupResult ? (
+                <div style={{
+                  padding: "16px 18px",
+                  borderRadius: "10px",
+                  background: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                  marginBottom: "20px"
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                    <span style={{ fontSize: "14px", fontWeight: 700, color: "#166534" }}>
+                      Existing Record Found: {lookupResult.matric_number}
+                    </span>
+                    <Badge tone={lookupResult.status === "correction_required" ? "warning" : "info"}>
+                      {lookupResult.status_display || lookupResult.status}
+                    </Badge>
+                  </div>
+                  {lookupResult.full_name && (
+                    <p style={{ margin: "2px 0 6px 0", fontSize: "13px", color: "#15803d" }}>
+                      Student Name: <strong>{lookupResult.full_name}</strong>
+                    </p>
+                  )}
+                  {lookupResult.correction_note && (
+                    <div style={{
+                      marginTop: 8,
+                      padding: "10px 14px",
+                      borderRadius: "8px",
+                      background: "#fffbeb",
+                      border: "1px solid #fde68a",
+                      fontSize: "13px",
+                      color: "#92400e"
+                    }}>
+                      <strong style={{ display: "block", marginBottom: 3, color: "#b45309" }}>
+                        Registry Correction Instructions:
+                      </strong>
+                      <span>{lookupResult.correction_note}</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className={styles.infoCallout} style={{ marginBottom: "20px" }}>
+                  <Info size={18} />
+                  <span>
+                    <strong>Returning Student:</strong> Enter your portal email and password to resume your registration right where you left off.
+                  </span>
+                </div>
+              )}
+
+              <form onSubmit={handleResumeRegistration} className={styles.form}>
+                <Field label="Email Address Registered on Account" required>
+                  <Input
+                    type="email"
+                    placeholder="student@example.com"
+                    value={resumeEmail}
+                    onChange={(e) => setResumeEmail(e.target.value)}
+                    required
+                  />
+                </Field>
+
+                <Field label="Portal Password" required>
+                  <Input
+                    type="password"
+                    placeholder="Enter your password"
+                    value={resumePassword}
+                    onChange={(e) => setResumePassword(e.target.value)}
+                    required
+                  />
+                </Field>
+
+                <div className={styles.cardActions}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLookupResult(null);
+                      setResumeMode("new");
+                    }}
+                    className={styles.cancelLink}
+                    style={{ background: "none", border: "none", cursor: "pointer" }}
+                  >
+                    Start a new registration instead
+                  </button>
+                  <Button type="submit" disabled={resuming}>
+                    {resuming ? (
+                      <>
+                        <Loader2 className={styles.spinIcon} size={16} /> Resuming Dossier...
+                      </>
+                    ) : (
+                      <>
+                        Resume Application &rarr;
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
             </div>
+          ) : (
+            /* ========================================================= */
+            /* FIRST-TIME REGISTRATION VIEW                              */
+            /* ========================================================= */
+            <div>
+              <div className={styles.infoCallout}>
+                <Info size={18} />
+                <span>
+                  <strong>Important:</strong> Your matriculation number will be cross-referenced with Marist Polytechnic's historical records. Ensure your name and phone match your official admission credentials.
+                </span>
+              </div>
 
-            <div className={styles.formGrid2}>
-              <Field label="First Name" required>
-                <Input
-                  placeholder="First name"
-                  value={startForm.first_name}
-                  onChange={(e) =>
-                    setStartForm({ ...startForm, first_name: e.target.value })
-                  }
-                  required
-                />
-              </Field>
-              <Field label="Last Name" required>
-                <Input
-                  placeholder="Last name"
-                  value={startForm.last_name}
-                  onChange={(e) =>
-                    setStartForm({ ...startForm, last_name: e.target.value })
-                  }
-                  required
-                />
-              </Field>
+              <form onSubmit={handleStartRegistration} className={styles.form}>
+                <div className={styles.formGrid2}>
+                  <Field label="Institutional Matriculation Number" required>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <Input
+                        placeholder="e.g. MAP/ND/CS/2022/0042"
+                        value={startForm.matric_number}
+                        onChange={(e) =>
+                          setStartForm({ ...startForm, matric_number: e.target.value.toUpperCase() })
+                        }
+                        onBlur={() => handleMatricLookup()}
+                        autoCapitalize="characters"
+                        required
+                        style={{ flex: 1 }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={lookupLoading || !startForm.matric_number.trim()}
+                        onClick={() => handleMatricLookup()}
+                        style={{ whiteSpace: "nowrap" }}
+                      >
+                        {lookupLoading ? <Loader2 className={styles.spinIcon} size={14} /> : "Check"}
+                      </Button>
+                    </div>
+                  </Field>
+                  <Field label="Phone Number" required>
+                    <Input
+                      type="tel"
+                      placeholder="e.g. 08012345678"
+                      value={startForm.phone}
+                      onChange={(e) =>
+                        setStartForm({ ...startForm, phone: e.target.value })
+                      }
+                      required
+                    />
+                  </Field>
+                </div>
+
+                <div className={styles.formGrid2}>
+                  <Field label="First Name" required>
+                    <Input
+                      placeholder="First name"
+                      value={startForm.first_name}
+                      onChange={(e) =>
+                        setStartForm({ ...startForm, first_name: e.target.value })
+                      }
+                      required
+                    />
+                  </Field>
+                  <Field label="Last Name" required>
+                    <Input
+                      placeholder="Last name"
+                      value={startForm.last_name}
+                      onChange={(e) =>
+                        setStartForm({ ...startForm, last_name: e.target.value })
+                      }
+                      required
+                    />
+                  </Field>
+                </div>
+
+                <Field label="Email Address (Used for Login & Registry Notifications)" required>
+                  <Input
+                    type="email"
+                    placeholder="student@example.com"
+                    value={startForm.email}
+                    onChange={(e) =>
+                      setStartForm({ ...startForm, email: e.target.value })
+                    }
+                    required
+                  />
+                </Field>
+
+                <div className={styles.formGrid2}>
+                  <Field label="Portal Password" required>
+                    <Input
+                      type="password"
+                      placeholder="At least 8 characters"
+                      value={startForm.password}
+                      onChange={(e) =>
+                        setStartForm({ ...startForm, password: e.target.value })
+                      }
+                      required
+                    />
+                  </Field>
+
+                  <Field label="Confirm Password" required>
+                    <Input
+                      type="password"
+                      placeholder="Re-enter password"
+                      value={startForm.password_confirm}
+                      onChange={(e) =>
+                        setStartForm({
+                          ...startForm,
+                          password_confirm: e.target.value,
+                        })
+                      }
+                      required
+                    />
+                  </Field>
+                </div>
+
+                <div className={styles.cardActions}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (startForm.email) setResumeEmail(startForm.email);
+                      setResumeMode("resume");
+                    }}
+                    className={styles.cancelLink}
+                    style={{ background: "none", border: "none", cursor: "pointer" }}
+                  >
+                    Already registered? Resume application &rarr;
+                  </button>
+                  <Button type="submit" disabled={submitting}>
+                    {submitting ? (
+                      <>
+                        <Loader2 className={styles.spinIcon} size={16} /> Validating Record...
+                      </>
+                    ) : (
+                      <>
+                        Start Onboarding <ArrowRight size={16} />
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
             </div>
-
-            <Field label="Email Address (Used for Login & Registry Notifications)" required>
-              <Input
-                type="email"
-                placeholder="student@example.com"
-                value={startForm.email}
-                onChange={(e) =>
-                  setStartForm({ ...startForm, email: e.target.value })
-                }
-                required
-              />
-            </Field>
-
-            <div className={styles.formGrid2}>
-              <Field label="Portal Password" required>
-                <Input
-                  type="password"
-                  placeholder="At least 8 characters"
-                  value={startForm.password}
-                  onChange={(e) =>
-                    setStartForm({ ...startForm, password: e.target.value })
-                  }
-                  required
-                />
-              </Field>
-
-              <Field label="Confirm Password" required>
-                <Input
-                  type="password"
-                  placeholder="Re-enter password"
-                  value={startForm.password_confirm}
-                  onChange={(e) =>
-                    setStartForm({
-                      ...startForm,
-                      password_confirm: e.target.value,
-                    })
-                  }
-                  required
-                />
-              </Field>
-            </div>
-
-            <div className={styles.cardActions}>
-              <Link href="/login" className={styles.cancelLink}>
-                Already have an active account? Log in →
-              </Link>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? (
-                  <>
-                    <Loader2 className={styles.spinIcon} size={16} /> Validating Record...
-                  </>
-                ) : (
-                  <>
-                    Start Onboarding <ArrowRight size={16} />
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
+          )}
         </Card>
       )}
 
