@@ -23,15 +23,32 @@ export interface HostelBlock {
   rooms?: HostelRoom[];
 }
 
+export interface RoomTypeOption {
+  type: string;
+  type_display: string;
+  fee: number;
+}
+
 export interface Hostel {
   id: number;
   name: string;
   code: string;
   gender: "male" | "female" | "mixed";
   gender_display: string;
-  campus: string;
-  description: string;
-  capacity: number;
+  gender_policy?: "MALE" | "FEMALE" | "CO_ED";
+  campus?: string;
+  description?: string;
+  warden_name?: string;
+  warden_phone?: string;
+  capacity?: number;
+  total_beds?: number;
+  occupied_beds?: number;
+  available_beds?: number;
+  occupancy_rate?: number;
+  total_rooms?: number;
+  total_blocks?: number;
+  fee_per_session?: number | string;
+  available_room_types?: RoomTypeOption[];
   is_active: boolean;
   blocks?: HostelBlock[];
 }

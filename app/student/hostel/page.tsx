@@ -13,6 +13,7 @@ import {
   Send,
   Loader2,
   RefreshCw,
+  Check,
 } from "lucide-react";
 import { useStudent } from "@/providers/StudentProvider";
 import {
@@ -37,8 +38,8 @@ export default function StudentHostelPage() {
   const [applications, setApplications] = useState<HostelApplication[]>([]);
 
   // Apply form state
-  const [selectedHostel, setSelectedHostel] = useState<number | "">("");
-  const [roomType, setRoomType] = useState("4_bed");
+  const [selectedHostel, setSelectedHostel] = useState<number | null>(null);
+  const [roomType, setRoomType] = useState("four_bed");
   const [specialReqs, setSpecialReqs] = useState("");
   const [submittingApp, setSubmittingApp] = useState(false);
   const [appMessage, setAppMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -61,7 +62,7 @@ export default function StudentHostelPage() {
       setHostels(hList);
       setAllocation(alloc);
       setApplications(apps);
-      if (hList.length > 0 && !selectedHostel) {
+      if (hList.length > 0 && selectedHostel === null) {
         setSelectedHostel(hList[0].id);
       }
     } catch (err) {
@@ -77,24 +78,36 @@ export default function StudentHostelPage() {
 
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedHostel) {
+      setAppMessage({
+        type: "error",
+        text: "Please select your preferred residential hall from the choices above.",
+      });
+      return;
+    }
+
     setSubmittingApp(true);
     setAppMessage(null);
     try {
       await applyForHostel({
-        preferred_hostel_id: selectedHostel ? Number(selectedHostel) : undefined,
+        preferred_hostel_id: selectedHostel,
         preferred_room_type: roomType,
         special_requirements: specialReqs,
       });
       setAppMessage({
         type: "success",
-        text: "Your hostel accommodation application has been submitted successfully!",
+        text: "Your hostel accommodation application has been submitted successfully! The student affairs team will match and allocate your bed space.",
       });
       setSpecialReqs("");
       await loadData();
     } catch (err: any) {
+      const errorMsg =
+        err?.message ||
+        err?.detail ||
+        (typeof err === "string" ? err : "Failed to submit hostel application. Please verify your student status.");
       setAppMessage({
         type: "error",
-        text: err?.message || err?.detail || "Failed to submit hostel application.",
+        text: errorMsg,
       });
     } finally {
       setSubmittingApp(false);
@@ -137,6 +150,7 @@ export default function StudentHostelPage() {
   }
 
   const latestApp = applications[0];
+  const chosenHostelObj = hostels.find((h) => h.id === selectedHostel);
 
   return (
     <div className={styles.container}>
@@ -149,7 +163,7 @@ export default function StudentHostelPage() {
           </div>
           <h1 className={styles.title}>Hostel & Accommodation</h1>
           <p className={styles.subtitle}>
-            On-campus residential booking, room allocation status, and facility maintenance.
+            Explore institutional residential halls, choose your accommodation space, and track bed allocation.
           </p>
         </div>
         <button onClick={loadData} className={styles.refreshBtn} title="Refresh details">
@@ -233,9 +247,10 @@ export default function StudentHostelPage() {
             <Clock size={24} />
           </div>
           <div>
-            <h3 className={styles.pendingTitle}>Hostel Application Under Review</h3>
+            <h3 className={styles.pendingTitle}>Hostel Accommodation Request Under Review</h3>
             <p className={styles.pendingText}>
-              Your request for <strong>{latestApp.preferred_hostel_name || "Campus Hostel"}</strong> ({latestApp.preferred_room_type.replace("_", " ")}) has been queued. The Hall Administrator will match and allocate your bed space shortly.
+              Your request for <strong>{latestApp.preferred_hostel_name || "Campus Residential Hall"}</strong> (
+              {latestApp.preferred_room_type.replace("_", " ").toUpperCase()}) has been received and queued. The Hall Administrator will review and allocate your bed space shortly.
             </p>
             <span className={styles.dateSubmitted}>
               Submitted on {new Date(latestApp.created_at).toLocaleDateString()}
@@ -244,15 +259,15 @@ export default function StudentHostelPage() {
         </div>
       ) : null}
 
-      {/* 2. Application Form (Show if not allocated) */}
+      {/* 2. Interactive Hostel Selection & Application Form (Show if not allocated and not pending) */}
       {(!allocation || !allocation.allocated) && (!latestApp || latestApp.status !== "pending") && (
         <div className={styles.formCard}>
           <div className={styles.formCardHeader}>
-            <Building2 size={22} className={styles.primaryIcon} />
+            <Building2 size={24} className={styles.primaryIcon} />
             <div>
               <h2 className={styles.sectionTitle}>Apply for Hostel Space</h2>
               <p className={styles.sectionSub}>
-                Select your preferred residential hall and bed space configuration for the current semester.
+                Browse the on-campus residential halls created by the institution, click on your preferred hall to choose it, and submit your accommodation request.
               </p>
             </div>
           </div>
@@ -275,139 +290,270 @@ export default function StudentHostelPage() {
           )}
 
           <form onSubmit={handleApply} className={styles.applyForm}>
-            <div className={styles.formRow}>
+            {/* Step 1: Interactive Hall Selection */}
+            <div className={styles.chooseHallSection}>
+              <div className={styles.chooseHallHeader}>
+                <h3 className={styles.chooseHallTitle}>
+                  1. Choose Your Preferred Residential Hall
+                </h3>
+                <p className={styles.chooseHallSub}>
+                  Click on any residential hall card to select it for your accommodation.
+                </p>
+              </div>
+
+              {hostels.length === 0 ? (
+                <div className={styles.emptyHallsState}>
+                  <Building2 size={32} style={{ margin: "0 auto 8px", color: "#94a3b8" }} />
+                  <p style={{ fontWeight: 600, color: "#1e293b", margin: "0 0 4px" }}>
+                    No Residential Halls Currently Configured
+                  </p>
+                  <p style={{ margin: 0 }}>
+                    Please check back shortly or contact the Student Affairs and Accommodation registry.
+                  </p>
+                </div>
+              ) : (
+                <div className={styles.hallsSelectionGrid}>
+                  {hostels.map((h) => {
+                    const isSelected = selectedHostel === h.id;
+                    const genderClass =
+                      h.gender === "female"
+                        ? styles.genderFemale
+                        : h.gender === "male"
+                        ? styles.genderMale
+                        : styles.genderMixed;
+
+                    const totalBeds = h.total_beds ?? h.capacity ?? 0;
+                    const availableBeds = h.available_beds ?? totalBeds;
+                    const feeVal = Number(h.fee_per_session || 45000);
+
+                    return (
+                      <div
+                        key={h.id}
+                        onClick={() => setSelectedHostel(h.id)}
+                        className={`${styles.hallCardInteractive} ${
+                          isSelected ? styles.hallCardSelected : ""
+                        }`}
+                      >
+                        {isSelected && (
+                          <div className={styles.hallSelectedIndicator}>
+                            <Check size={12} strokeWidth={3} />
+                            <span>Selected</span>
+                          </div>
+                        )}
+
+                        <div className={styles.hallCardHeader}>
+                          <span className={styles.hallIconBox}>
+                            <Building2 size={20} />
+                          </span>
+                          <div className={styles.hallCardInfo}>
+                            <h4 className={styles.hallCardTitle}>{h.name}</h4>
+                            <span className={styles.hallCardCode}>{h.code}</span>
+                          </div>
+                        </div>
+
+                        <span className={`${styles.hallGenderBadge} ${genderClass}`}>
+                          {h.gender === "female"
+                            ? "FEMALE ONLY (LADIES)"
+                            : h.gender === "male"
+                            ? "MALE ONLY (GENTLEMEN)"
+                            : "CO-ED / MIXED RESIDENCE"}
+                        </span>
+
+                        <p className={styles.hallCardDesc}>
+                          {h.description ||
+                            "Serviced campus residential hall equipped with electricity, water supply, and study facilities."}
+                        </p>
+
+                        <div className={styles.hallBedStats}>
+                          <div className={styles.bedStatItem}>
+                            <span className={styles.bedStatLabel}>Bed Spaces</span>
+                            <span className={styles.bedStatVal}>
+                              {availableBeds > 0 ? `${availableBeds} Available` : "Check Availability"}
+                            </span>
+                          </div>
+                          <div className={styles.bedStatItem} style={{ textAlign: "right" }}>
+                            <span className={styles.bedStatLabel}>Session Fee</span>
+                            <span className={styles.hallFeeBadge}>
+                              ₦{feeVal.toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        {h.warden_name && (
+                          <div style={{ fontSize: "11px", color: "#64748b" }}>
+                            <strong>Warden:</strong> {h.warden_name}{" "}
+                            {h.warden_phone ? `(${h.warden_phone})` : ""}
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          className={
+                            isSelected
+                              ? styles.chooseHallBtnSelected
+                              : styles.chooseHallBtnDefault
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedHostel(h.id);
+                          }}
+                        >
+                          {isSelected ? (
+                            <>
+                              <CheckCircle2 size={15} />
+                              <span>Selected Hall</span>
+                            </>
+                          ) : (
+                            <span>Choose This Hall</span>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Step 2: Room Configuration & Preferences */}
+            <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div className={styles.chooseHallHeader}>
+                <h3 className={styles.chooseHallTitle}>
+                  2. Room Configuration & Preferences
+                </h3>
+                <p className={styles.chooseHallSub}>
+                  {chosenHostelObj
+                    ? `Configuring accommodation request for "${chosenHostelObj.name}"`
+                    : "Select your preferred room type and any special accommodation needs."}
+                </p>
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Selected Residential Hall</label>
+                  <select
+                    value={selectedHostel || ""}
+                    onChange={(e) => setSelectedHostel(Number(e.target.value))}
+                    className={styles.select}
+                    required
+                  >
+                    {hostels.map((h) => (
+                      <option key={h.id} value={h.id}>
+                        {h.name} ({h.gender_display} • ₦{Number(h.fee_per_session || 45000).toLocaleString()})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Preferred Room Configuration</label>
+                  <select
+                    value={roomType}
+                    onChange={(e) => setRoomType(e.target.value)}
+                    className={styles.select}
+                    required
+                  >
+                    <option value="four_bed">4-Bed Standard Quad Room (Recommended)</option>
+                    <option value="double">2-Bed Shared Room</option>
+                    <option value="single">1-Bed Single Private Suite</option>
+                    <option value="executive">Executive En-Suite Room</option>
+                  </select>
+                </div>
+              </div>
+
               <div className={styles.formGroup}>
-                <label className={styles.label}>Preferred Residential Hall</label>
-                <select
-                  value={selectedHostel}
-                  onChange={(e) => setSelectedHostel(Number(e.target.value))}
-                  className={styles.select}
-                  required
+                <label className={styles.label}>
+                  Medical or Special Accommodation Preferences (Optional)
+                </label>
+                <textarea
+                  value={specialReqs}
+                  onChange={(e) => setSpecialReqs(e.target.value)}
+                  placeholder="e.g. Lower bunk required due to medical condition, allergy, or special study needs."
+                  className={styles.textarea}
+                  rows={3}
+                />
+              </div>
+
+              <div className={styles.formFooter}>
+                <div className={styles.policyNotice}>
+                  <ShieldCheck size={16} />
+                  <span>
+                    Hostel spaces are allocated in accordance with Marist Polytechnic residential guidelines and verified active student status.
+                  </span>
+                </div>
+                <button
+                  type="submit"
+                  disabled={submittingApp || !selectedHostel}
+                  className={styles.submitBtn}
                 >
-                  {hostels.map((h) => (
-                    <option key={h.id} value={h.id}>
-                      {h.name} ({h.gender_display} • Capacity: {h.capacity})
-                    </option>
-                  ))}
-                  {hostels.length === 0 && (
-                    <option value="">St. Joseph Hall (Male Residence)</option>
+                  {submittingApp ? (
+                    <>
+                      <Loader2 size={16} className={styles.btnSpinner} />
+                      <span>Submitting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send size={16} />
+                      <span>Submit Accommodation Request</span>
+                    </>
                   )}
-                </select>
+                </button>
               </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Room Configuration</label>
-                <select
-                  value={roomType}
-                  onChange={(e) => setRoomType(e.target.value)}
-                  className={styles.select}
-                  required
-                >
-                  <option value="1_bed">1-Bed Private Suite</option>
-                  <option value="2_bed">2-Bed Shared Room</option>
-                  <option value="4_bed">4-Bed Standard Quad (Recommended)</option>
-                  <option value="6_bed">6-Bed Room</option>
-                </select>
-              </div>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.label}>
-                Medical or Special Accommodation Preferences (Optional)
-              </label>
-              <textarea
-                value={specialReqs}
-                onChange={(e) => setSpecialReqs(e.target.value)}
-                placeholder="e.g. Lower bunk required due to medical reason, quiet study floor, etc."
-                className={styles.textarea}
-                rows={3}
-              />
-            </div>
-
-            <div className={styles.formFooter}>
-              <div className={styles.policyNotice}>
-                <ShieldCheck size={16} />
-                <span>Hostel spaces are allocated on institutional guidelines and verified student status.</span>
-              </div>
-              <button
-                type="submit"
-                disabled={submittingApp}
-                className={styles.submitBtn}
-              >
-                {submittingApp ? (
-                  <>
-                    <Loader2 size={16} className={styles.btnSpinner} />
-                    <span>Submitting...</span>
-                  </>
-                ) : (
-                  <>
-                    <Send size={16} />
-                    <span>Submit Accommodation Request</span>
-                  </>
-                )}
-              </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* 3. Halls Overview Cards */}
+      {/* 3. Campus Residential Halls Directory (Always visible for exploring) */}
       <div className={styles.hallsSection}>
-        <h3 className={styles.hallsTitle}>Campus Residential Halls</h3>
+        <h3 className={styles.hallsTitle}>Campus Residential Halls Directory</h3>
+        <p style={{ fontSize: "13px", color: "#64748b", margin: "-8px 0 16px" }}>
+          Official institutional hall listing and residential facilities available on campus.
+        </p>
         <div className={styles.hallsGrid}>
-          {hostels.map((h) => (
-            <div key={h.id} className={styles.hallCard}>
-              <div className={styles.hallCardTop}>
-                <span className={styles.hallIconBox}>
-                  <Building2 size={20} />
-                </span>
-                <span className={styles.hallGenderTag}>
-                  {h.gender?.toUpperCase()}
-                </span>
+          {hostels.map((h) => {
+            const genderClass =
+              h.gender === "female"
+                ? styles.genderFemale
+                : h.gender === "male"
+                ? styles.genderMale
+                : styles.genderMixed;
+            const totalBeds = h.total_beds ?? h.capacity ?? 0;
+            const feeVal = Number(h.fee_per_session || 45000);
+
+            return (
+              <div key={h.id} className={styles.hallCard}>
+                <div className={styles.hallCardTop}>
+                  <span className={styles.hallIconBox}>
+                    <Building2 size={20} />
+                  </span>
+                  <span className={`${styles.hallGenderBadge} ${genderClass}`}>
+                    {h.gender?.toUpperCase()}
+                  </span>
+                </div>
+                <h4 className={styles.hallCardName}>{h.name}</h4>
+                <code style={{ fontSize: "11px", color: "#64748b" }}>{h.code}</code>
+                <p className={styles.hallCardDesc}>
+                  {h.description || "Serviced on-campus residential facility with 24/7 security and utilities."}
+                </p>
+                <div className={styles.hallCardFooter}>
+                  <span>Capacity: {totalBeds > 0 ? `${totalBeds} Beds` : "Standard"}</span>
+                  <span className={styles.campusTag}>₦{feeVal.toLocaleString()} / Sem</span>
+                </div>
               </div>
-              <h4 className={styles.hallCardName}>{h.name}</h4>
-              <p className={styles.hallCardDesc}>
-                {h.description || "Fully serviced on-campus residential facility with 24/7 security and utilities."}
-              </p>
-              <div className={styles.hallCardFooter}>
-                <span>Capacity: {h.capacity} Beds</span>
-                <span className={styles.campusTag}>{h.campus || "Main Campus"}</span>
-              </div>
-            </div>
-          ))}
-          {hostels.length === 0 && (
-            <div className={styles.hallCard}>
-              <div className={styles.hallCardTop}>
-                <span className={styles.hallIconBox}>
-                  <Building2 size={20} />
-                </span>
-                <span className={styles.hallGenderTag}>MALE</span>
-              </div>
-              <h4 className={styles.hallCardName}>St. Joseph Hall</h4>
-              <p className={styles.hallCardDesc}>
-                Main campus male residential quad with reading halls and recreation area.
-              </p>
-              <div className={styles.hallCardFooter}>
-                <span>Capacity: 240 Beds</span>
-                <span className={styles.campusTag}>Main Campus</span>
-              </div>
-            </div>
-          )}
+            );
+          })}
         </div>
       </div>
 
       {/* 4. Maintenance Report Modal */}
       {showMaintModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowMaintModal(false)}>
-          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
             <div className={styles.modalHeader}>
-              <Wrench size={22} className={styles.primaryIcon} />
-              <div>
-                <h3 className={styles.modalTitle}>Report Room Maintenance</h3>
-                <p className={styles.modalSub}>
-                  Log a repair ticket for room {allocation?.room_number || "current room"}.
-                </p>
-              </div>
+              <h3 className={styles.modalTitle}>Report Facility Issue</h3>
+              <button onClick={() => setShowMaintModal(false)} className={styles.modalClose}>
+                &times;
+              </button>
             </div>
 
             {maintMessage && (
@@ -418,38 +564,32 @@ export default function StudentHostelPage() {
                     : styles.alertError
                 }
               >
-                {maintMessage.type === "success" ? (
-                  <CheckCircle2 size={18} />
-                ) : (
-                  <AlertCircle size={18} />
-                )}
                 <span>{maintMessage.text}</span>
               </div>
             )}
 
-            <form onSubmit={handleReportMaintenance}>
+            <form onSubmit={handleReportMaintenance} className={styles.modalForm}>
               <div className={styles.formGroup}>
                 <label className={styles.label}>Issue Category</label>
                 <select
                   value={issueType}
                   onChange={(e) => setIssueType(e.target.value)}
                   className={styles.select}
-                  required
                 >
-                  <option value="plumbing">Plumbing (Leakage, Tap, Toilet)</option>
-                  <option value="electrical">Electrical (Sockets, Lighting, Fan)</option>
-                  <option value="furniture">Furniture (Bed frame, Desk, Wardrobe)</option>
-                  <option value="damage">Window / Door / Structural</option>
-                  <option value="other">Other Facility Issue</option>
+                  <option value="plumbing">Plumbing (Water, Pipes, Washroom)</option>
+                  <option value="electrical">Electrical (Light, Socket, Switch)</option>
+                  <option value="furniture">Furniture (Bed frame, Wardrobe, Desk)</option>
+                  <option value="damage">Structural (Door lock, Window, Wall)</option>
+                  <option value="other">Other Facility Request</option>
                 </select>
               </div>
 
               <div className={styles.formGroup}>
-                <label className={styles.label}>Describe the Problem</label>
+                <label className={styles.label}>Issue Details & Location in Room</label>
                 <textarea
                   value={issueDesc}
                   onChange={(e) => setIssueDesc(e.target.value)}
-                  placeholder="Please describe the issue in detail so technicians can bring appropriate tools..."
+                  placeholder="Describe the issue in detail so maintenance technicians can locate and repair it..."
                   className={styles.textarea}
                   rows={4}
                   required
@@ -466,15 +606,10 @@ export default function StudentHostelPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={submittingMaint}
+                  disabled={submittingMaint || !issueDesc.trim()}
                   className={styles.submitBtn}
                 >
-                  {submittingMaint ? (
-                    <Loader2 size={16} className={styles.btnSpinner} />
-                  ) : (
-                    <Send size={16} />
-                  )}
-                  <span>Submit Ticket</span>
+                  {submittingMaint ? "Submitting..." : "Send Ticket"}
                 </button>
               </div>
             </form>
