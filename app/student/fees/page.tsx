@@ -7,6 +7,7 @@ import {
   AlertCircle,
   ArrowRight,
   Building2,
+  Calendar,
   CheckCircle2,
   Clock,
   CreditCard,
@@ -242,6 +243,17 @@ function FeesContent() {
   const coreBalanceDue = Math.max(0, tutorFee.balanceDue + hostelFee.balanceDue);
   const isCoreCleared = coreBalanceDue <= 0 && coreTotalAmount > 0;
 
+  // Comprehensive true grand total: Core (Tutor + Hostel) + All Other Levies
+  const actualGrandTotal = Math.max(
+    Number(invoice.totalAmount) || 0,
+    coreTotalAmount + otherTotalAmount
+  );
+  const actualTotalPaid = Number(invoice.amountPaid) || 0;
+  const actualTotalBalance = Math.max(
+    0,
+    actualGrandTotal - actualTotalPaid
+  );
+
   const summary: InvoiceFeeSummary = invoice.feeSummary || {
     tutorSubtotal: tutorFee.amount,
     hostelSubtotal: hostelFee.amount,
@@ -249,17 +261,16 @@ function FeesContent() {
     corePaid: coreTotalPaid,
     coreBalanceDue: coreBalanceDue,
     otherSubtotal: otherTotalAmount,
-    grandTotal: invoice.totalAmount,
-    totalPaid: invoice.amountPaid,
-    totalBalanceDue: invoice.balanceDue,
-    isCleared: invoice.isCleared || invoice.balanceDue <= 0,
+    grandTotal: actualGrandTotal,
+    totalPaid: actualTotalPaid,
+    totalBalanceDue: actualTotalBalance,
+    isCleared: invoice.isCleared || actualTotalBalance <= 0,
   };
 
-  const isCleared = invoice.isCleared || invoice.balanceDue <= 0;
+  const isCleared = invoice.isCleared || actualTotalBalance <= 0;
 
   // Determine maximum balance payable based on current payTarget
-  // Tutor and Hostel MUST be paid together, so payTarget="core" covers both
-  let targetMaxBalance = coreBalanceDue > 0 ? coreBalanceDue : invoice.balanceDue;
+  let targetMaxBalance = coreBalanceDue > 0 ? coreBalanceDue : actualTotalBalance;
   let targetDescription = "Tutor Fee & Hostel Accommodation Fee (Combined)";
   let targetFeeType = "tuition_and_hostel";
 
@@ -268,11 +279,11 @@ function FeesContent() {
     targetDescription = "Tutor Fee & Hostel Accommodation Fee (Combined)";
     targetFeeType = "tuition_and_hostel";
   } else if (payTarget === "other") {
-    targetMaxBalance = Math.min(invoice.balanceDue, otherTotalBalance);
+    targetMaxBalance = otherTotalBalance;
     targetDescription = "Other Institutional Fees & Levies";
     targetFeeType = "other";
   } else if (payTarget === "all") {
-    targetMaxBalance = invoice.balanceDue;
+    targetMaxBalance = actualTotalBalance;
     targetDescription = "All Institutional Fees (Tutor, Hostel & Levies)";
     targetFeeType = "all";
   }
@@ -334,19 +345,63 @@ function FeesContent() {
     }
   }
 
+  const paidPercentage = actualGrandTotal > 0
+    ? Math.min(100, Math.round((actualTotalPaid / actualGrandTotal) * 100))
+    : 100;
+
   return (
     <div className={styles.container}>
-      <PageHeader
-        eyebrow="Student Bursary & Financial Affairs"
-        title="School Fees & Institutional Levies"
-        description={`Session: ${invoice.sessionName} • Level: ${invoice.levelName} • Invoice: ${invoice.invoiceNumber}`}
-      />
+      {/* Financial Health Hero Banner */}
+      <div className={styles.heroBanner}>
+        <div className={styles.heroLeft}>
+          <div className={styles.heroBadgeRow}>
+            <span className={styles.heroSessionPill}>
+              <Calendar size={13} />
+              Session {invoice.sessionName}
+            </span>
+            <span className={styles.heroSessionPill}>
+              <GraduationCap size={13} />
+              Level: {invoice.levelName}
+            </span>
+            <span className={styles.heroSessionPill} style={{ fontFamily: "monospace" }}>
+              INV: {invoice.invoiceNumber}
+            </span>
+          </div>
+
+          <h1 className={styles.heroTitle}>School Fees & Financial Clearance</h1>
+          <p className={styles.heroDesc}>
+            Manage your official session fee obligations, settle approved academic fees via Paystack,
+            and access officially verified payment receipts (Form SMS-FR01).
+          </p>
+        </div>
+
+        <div className={styles.heroRight}>
+          <div className={styles.progressWrap}>
+            <div className={styles.progressTop}>
+              <span>Settlement Progress</span>
+              <span style={{ color: "#34d399", fontWeight: 750 }}>{paidPercentage}%</span>
+            </div>
+            <div className={styles.progressBarTrack}>
+              <div
+                className={styles.progressBarFill}
+                style={{ width: `${paidPercentage}%` }}
+              />
+            </div>
+            <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.75)" }}>
+              {isCleared
+                ? "All session fees cleared. Examination clearance valid."
+                : `₦${actualTotalBalance.toLocaleString("en-NG")} remaining balance due.`}
+            </span>
+          </div>
+        </div>
+      </div>
 
       {feedback && <Alert tone={feedback.tone}>{feedback.message}</Alert>}
 
       {/* KPI Overview Cards */}
       <div className={styles.overviewGrid}>
         <div className={styles.overviewCard}>
+          <div className={styles.cardAccentLine} style={{ background: "#4338ca" }} />
           <div
             className={styles.iconWrap}
             style={{ background: "#e0e7ff", color: "#4338ca" }}
@@ -356,7 +411,7 @@ function FeesContent() {
           <div>
             <div className={styles.metaLabel}>Total Approved Fees</div>
             <div className={styles.metaVal}>
-              ₦{invoice.totalAmount.toLocaleString("en-NG", {
+              ₦{actualGrandTotal.toLocaleString("en-NG", {
                 minimumFractionDigits: 2,
               })}
             </div>
@@ -364,6 +419,7 @@ function FeesContent() {
         </div>
 
         <div className={styles.overviewCard}>
+          <div className={styles.cardAccentLine} style={{ background: "#059669" }} />
           <div
             className={styles.iconWrap}
             style={{ background: "#d1fae5", color: "#059669" }}
@@ -381,6 +437,7 @@ function FeesContent() {
         </div>
 
         <div className={styles.overviewCard}>
+          <div className={styles.cardAccentLine} style={{ background: isCleared ? "#059669" : "#dc2626" }} />
           <div
             className={styles.iconWrap}
             style={{
@@ -396,7 +453,7 @@ function FeesContent() {
               className={styles.metaVal}
               style={{ color: isCleared ? "#059669" : "#dc2626" }}
             >
-              ₦{invoice.balanceDue.toLocaleString("en-NG", {
+              ₦{actualTotalBalance.toLocaleString("en-NG", {
                 minimumFractionDigits: 2,
               })}
             </div>
@@ -404,16 +461,20 @@ function FeesContent() {
         </div>
 
         <div className={styles.overviewCard}>
+          <div className={styles.cardAccentLine} style={{ background: isCleared ? "#059669" : "#d97706" }} />
           <div
             className={styles.iconWrap}
-            style={{ background: "#fef3c7", color: "#d97706" }}
+            style={{
+              background: isCleared ? "#d1fae5" : "#fef3c7",
+              color: isCleared ? "#059669" : "#d97706",
+            }}
           >
             <ShieldCheck size={24} />
           </div>
           <div>
             <div className={styles.metaLabel}>Financial Status</div>
-            <div className={styles.metaVal} style={{ fontSize: "1.05rem" }}>
-              {invoice.statusDisplay.toUpperCase()}
+            <div className={styles.metaVal} style={{ fontSize: "1.1rem" }}>
+              {isCleared ? "CLEARED" : invoice.statusDisplay.toUpperCase()}
             </div>
           </div>
         </div>
@@ -428,16 +489,8 @@ function FeesContent() {
               Core Academic & Residential Fees (Paid Together)
             </h2>
           </div>
-          <span
-            style={{
-              fontSize: "0.8125rem",
-              color: "#2563eb",
-              fontWeight: 600,
-              background: "#eff6ff",
-              padding: "0.25rem 0.65rem",
-              borderRadius: "6px",
-            }}
-          >
+          <span className={styles.sectionPill}>
+            <ShieldCheck size={14} />
             Mandatory Joint Settlement
           </span>
         </div>
@@ -754,7 +807,8 @@ function FeesContent() {
             scheduled for this session.
           </div>
         ) : (
-          <table className={styles.breakdownTable}>
+          <div className={styles.tableWrap}>
+            <table className={styles.breakdownTable}>
             <thead>
               <tr>
                 <th style={{ width: "28%" }}>Fee Head / Levy</th>
@@ -863,6 +917,7 @@ function FeesContent() {
               </tr>
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
@@ -936,7 +991,7 @@ function FeesContent() {
             <div className={styles.summaryRowGrand}>
               <span>Summed Grand Total (Approved Fees)</span>
               <span style={{ color: "var(--color-primary)" }}>
-                ₦{invoice.totalAmount.toLocaleString("en-NG", {
+                ₦{actualGrandTotal.toLocaleString("en-NG", {
                   minimumFractionDigits: 2,
                 })}
               </span>
@@ -1134,7 +1189,7 @@ function FeesContent() {
                         All Fees (Summed Up)
                       </span>
                       <span className={styles.targetBtnSub}>
-                        Bal: ₦{invoice.balanceDue.toLocaleString("en-NG")}
+                        Bal: ₦{actualTotalBalance.toLocaleString("en-NG")}
                       </span>
                     </button>
                   )}
@@ -1275,7 +1330,8 @@ function FeesContent() {
             No payment transactions recorded for this invoice yet.
           </div>
         ) : (
-          <table className={styles.historyTable}>
+          <div className={styles.tableWrap}>
+            <table className={styles.historyTable}>
             <thead>
               <tr>
                 <th>Receipt No</th>
@@ -1369,6 +1425,7 @@ function FeesContent() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>
