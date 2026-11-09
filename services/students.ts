@@ -366,7 +366,12 @@ async function fetchPassportPhotoFallback(): Promise<string | undefined> {
           (doc.file as string) ||
           (doc.objectUrl as string) ||
           (doc.url as string);
-        if (fileUrl && typeof fileUrl === "string" && fileUrl.trim()) {
+        if (
+          fileUrl &&
+          typeof fileUrl === "string" &&
+          fileUrl.trim() &&
+          !fileUrl.trim().toLowerCase().endsWith(".pdf")
+        ) {
           const finalUrl = fileUrl.trim();
           if (typeof window !== "undefined") {
             sessionStorage.setItem("maris_student_avatar", finalUrl);
@@ -442,6 +447,21 @@ export async function updateMyProfile(
   const updated = mapProfile(wire);
   if (!updated.photoUrl && payload.photoUrl) {
     updated.photoUrl = payload.photoUrl;
+  }
+  return updated;
+}
+
+/** PATCH /students/me/profile/ (multipart) - Upload student passport photo */
+export async function uploadStudentPhoto(file: File): Promise<StudentProfile> {
+  const form = new FormData();
+  form.append("photo", file);
+  const wire = await api.uploadPatch<WireStudentProfile>(
+    "/students/me/profile/",
+    form,
+  );
+  const updated = mapProfile(wire);
+  if (updated.photoUrl && typeof window !== "undefined") {
+    sessionStorage.setItem("maris_student_avatar", updated.photoUrl);
   }
   return updated;
 }
@@ -1419,11 +1439,24 @@ export async function getMyDocuments(): Promise<StudentDocumentsResponse> {
       slipUrl: rs.slip_url,
       frontendUrl: rs.frontend_url,
     })),
-    counts: res.counts || {
-      registrationForms: 0,
-      feeReceipts: 0,
-      resultSlips: 0,
-      totalDocuments: 0,
+    counts: {
+      registrationForms: Number(
+        res.counts?.registrationForms ?? res.counts?.registration_forms ?? (res.registration_forms || []).length,
+      ),
+      feeReceipts: Number(
+        res.counts?.feeReceipts ?? res.counts?.fee_receipts ?? (res.fee_receipts || []).length,
+      ),
+      resultSlips: Number(
+        res.counts?.resultSlips ?? res.counts?.result_slips ?? (res.result_slips || []).length,
+      ),
+      totalDocuments: Number(
+        res.counts?.totalDocuments ??
+          res.counts?.total_documents ??
+          2 +
+            (res.registration_forms || []).length +
+            (res.fee_receipts || []).length +
+            (res.result_slips || []).length,
+      ),
     },
   };
 }

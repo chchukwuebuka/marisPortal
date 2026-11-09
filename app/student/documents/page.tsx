@@ -1,21 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
   Award,
   BookOpen,
+  Camera,
+  CheckCircle2,
   CreditCard,
   Download,
   ExternalLink,
-  FileCheck2,
-  FileText,
-  Filter,
   FolderArchive,
-  GraduationCap,
   Printer,
-  ShieldCheck,
+  Upload,
   UserCheck,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout";
@@ -29,14 +27,79 @@ import styles from "./documents.module.css";
 type TabType = "all" | "academic" | "financial" | "credentials";
 
 export default function StudentDocumentsPage() {
-  const { student } = useStudent();
+  const { student, uploadPhoto } = useStudent();
   const [docData, setDocData] = useState<StudentDocumentsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("all");
 
-  const fullName = student?.user?.fullName || "Student";
-  const photoUrl = resolveMediaUrl(student?.profile?.photoUrl);
+  // Direct passport photo upload state
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [localPhotoPreview, setLocalPhotoPreview] = useState<string | null>(null);
+  const [imgBroken, setImgBroken] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoSuccess, setPhotoSuccess] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
+  const fullName = student?.user?.fullName || docData?.idCard?.fullName || "Student";
+  const resolvedPhotoUrl =
+    localPhotoPreview ||
+    resolveMediaUrl(student?.profile?.photoUrl || docData?.idCard?.photo);
+  const displayPhotoUrl = !imgBroken ? resolvedPhotoUrl : undefined;
+
+  const handleSelectPassportFile = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("Please select a valid passport image file (JPG, PNG, or WEBP).");
+      setPhotoSuccess(null);
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setPhotoError("Passport image must be smaller than 5 MB.");
+      setPhotoSuccess(null);
+      e.target.value = "";
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setLocalPhotoPreview(previewUrl);
+    setImgBroken(false);
+    setUploadingPhoto(true);
+    setPhotoError(null);
+    setPhotoSuccess(null);
+
+    try {
+      const updatedProfile = await uploadPhoto(file);
+      const savedUrl = resolveMediaUrl(updatedProfile.photoUrl);
+      if (savedUrl) {
+        setDocData((prev) =>
+          prev
+            ? {
+                ...prev,
+                idCard: {
+                  ...prev.idCard,
+                  photo: savedUrl,
+                },
+              }
+            : prev,
+        );
+      }
+      setPhotoSuccess("Passport photograph uploaded and applied to your Digital ID Card.");
+    } catch (err: unknown) {
+      setPhotoError(
+        err instanceof Error ? err.message : "Failed to upload passport photograph.",
+      );
+    } finally {
+      setUploadingPhoto(false);
+      e.target.value = "";
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -45,9 +108,11 @@ export default function StudentDocumentsPage() {
         setLoading(true);
         const data = await getMyDocuments();
         if (mounted) setDocData(data);
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (mounted) {
-          setError(err?.message || "Failed to load student documents.");
+          setError(
+            err instanceof Error ? err.message : "Failed to load student documents.",
+          );
         }
       } finally {
         if (mounted) setLoading(false);
@@ -131,6 +196,14 @@ export default function StudentDocumentsPage() {
 
       {/* Digital Student ID Badge */}
       <div className={styles.idCardSection}>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={handleSelectPassportFile}
+          style={{ display: "none" }}
+        />
+
         <div className={styles.idCardPhysical}>
           <div className={styles.idCardTop}>
             <Image
@@ -144,18 +217,40 @@ export default function StudentDocumentsPage() {
           </div>
 
           <div className={styles.idCardBody}>
-            <div className={styles.idPhotoWrap}>
-              {photoUrl ? (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              title="Click to upload or change passport photograph"
+              className={styles.idPhotoWrap}
+              style={{
+                cursor: "pointer",
+                position: "relative",
+                padding: 0,
+              }}
+            >
+              {displayPhotoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={photoUrl}
+                  src={displayPhotoUrl}
                   alt={fullName}
                   className={styles.idPhotoImg}
+                  onError={() => setImgBroken(true)}
                 />
               ) : (
-                initials(fullName)
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "2px",
+                  }}
+                >
+                  <span>{initials(fullName)}</span>
+                  <Camera size={12} style={{ opacity: 0.7 }} />
+                </div>
               )}
-            </div>
+            </button>
 
             <div className={styles.idDetails}>
               <div className={styles.idStudentName}>{fullName}</div>
@@ -175,6 +270,43 @@ export default function StudentDocumentsPage() {
           <p className={styles.idDesc}>
             Your official digital student identity credential. Verified with active matriculation number ({docData.idCard.matricNumber}) and registered institutional bio-data.
           </p>
+
+          {photoSuccess && (
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                padding: "0.5rem 0.85rem",
+                borderRadius: "8px",
+                background: "rgba(16, 185, 129, 0.18)",
+                border: "1px solid rgba(52, 211, 153, 0.4)",
+                color: "#a7f3d0",
+                fontSize: "0.825rem",
+                fontWeight: 500,
+              }}
+            >
+              <CheckCircle2 size={15} />
+              <span>{photoSuccess}</span>
+            </div>
+          )}
+
+          {photoError && (
+            <div
+              style={{
+                padding: "0.5rem 0.85rem",
+                borderRadius: "8px",
+                background: "rgba(239, 68, 68, 0.18)",
+                border: "1px solid rgba(248, 113, 113, 0.4)",
+                color: "#fecaca",
+                fontSize: "0.825rem",
+                fontWeight: 500,
+              }}
+            >
+              {photoError}
+            </div>
+          )}
+
           <div className={styles.idActions}>
             <button
               type="button"
@@ -184,23 +316,32 @@ export default function StudentDocumentsPage() {
               <Printer size={16} />
               Print ID Badge
             </button>
-            <Link
-              href="/student/profile"
+            <button
+              type="button"
+              disabled={uploadingPhoto}
+              onClick={() => fileInputRef.current?.click()}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "0.5rem",
                 padding: "0.6rem 1rem",
-                background: "rgba(255, 255, 255, 0.1)",
+                background: "rgba(255, 255, 255, 0.14)",
+                border: "1px solid rgba(255, 255, 255, 0.25)",
                 color: "#ffffff",
                 borderRadius: "8px",
                 fontSize: "0.875rem",
                 fontWeight: 600,
-                textDecoration: "none",
+                cursor: uploadingPhoto ? "wait" : "pointer",
+                opacity: uploadingPhoto ? 0.75 : 1,
               }}
             >
-              Update Photo in Biodata
-            </Link>
+              <Upload size={16} />
+              {uploadingPhoto
+                ? "Uploading Passport..."
+                : displayPhotoUrl
+                ? "Change Passport Photo"
+                : "Upload Passport Photo"}
+            </button>
           </div>
         </div>
       </div>

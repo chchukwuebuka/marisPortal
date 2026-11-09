@@ -216,4 +216,7 @@ export const api = {
   /** multipart PUT (file replace/reupload). */
   uploadPut: <T>(path: string, form: FormData, opts?: RequestOptions) =>
     request<T>("PUT", path, { ...opts, form }),
+  /** multipart PATCH (partial file/profile update). */
+  uploadPatch: <T>(path: string, form: FormData, opts?: RequestOptions) =>
+    request<T>("PATCH", path, { ...opts, form }),
 };

@@ -1,16 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Alert, Button, Card, CardBody, CardHeader, Field, Input, Select, Spinner } from "@/components/ui";
 import { PageHeader } from "@/components/layout";
 import { useStudent } from "@/providers/StudentProvider";
-import { CheckCircle2, ShieldCheck, User, Smartphone, Monitor, LogOut, RefreshCw } from "lucide-react";
+import { resolveMediaUrl } from "@/lib/format";
+import { Camera, CheckCircle2, ShieldCheck, Monitor, LogOut, RefreshCw, Upload } from "lucide-react";
 import { getActiveSessions, revokeSession, revokeAllSessions } from "@/services/auth";
 import type { ActiveSession } from "@/types/student";
 
 export default function StudentProfilePage() {
-  const { student, profile, updateProfile, loading } = useStudent();
+  const { student, profile, updateProfile, uploadPhoto, loading } = useStudent();
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [localPhotoPreview, setLocalPhotoPreview] = useState<string | null>(null);
+  const [imgBroken, setImgBroken] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
   const [sessions, setSessions] = useState<ActiveSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [sessionMsg, setSessionMsg] = useState<string | null>(null);
@@ -20,7 +25,7 @@ export default function StudentProfilePage() {
     try {
       const data = await getActiveSessions();
       setSessions(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn("Failed to load active sessions", err);
     } finally {
       setLoadingSessions(false);
@@ -36,8 +41,8 @@ export default function StudentProfilePage() {
       await revokeSession(id);
       setSessionMsg("Device logged out successfully.");
       await loadSessions();
-    } catch (err: any) {
-      setSessionMsg(err?.message || "Failed to log out device.");
+    } catch (err: unknown) {
+      setSessionMsg(err instanceof Error ? err.message : "Failed to log out device.");
     }
   };
 
@@ -46,8 +51,8 @@ export default function StudentProfilePage() {
       await revokeAllSessions();
       setSessionMsg("All other devices logged out.");
       await loadSessions();
-    } catch (err: any) {
-      setSessionMsg(err?.message || "Failed to revoke sessions.");
+    } catch (err: unknown) {
+      setSessionMsg(err instanceof Error ? err.message : "Failed to revoke sessions.");
     }
   };
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -76,6 +81,30 @@ export default function StudentProfilePage() {
         Student profile could not be located.
       </Alert>
     );
+  }
+
+  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setErrorMsg("Please select a valid image file (JPG, PNG, or WEBP).");
+      e.target.value = "";
+      return;
+    }
+    setLocalPhotoPreview(URL.createObjectURL(file));
+    setImgBroken(false);
+    setUploadingPhoto(true);
+    setSuccessMsg(null);
+    setErrorMsg(null);
+    try {
+      await uploadPhoto(file);
+      setSuccessMsg("Passport photograph uploaded and updated on your Digital ID Card.");
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Failed to upload passport photo.");
+    } finally {
+      setUploadingPhoto(false);
+      e.target.value = "";
+    }
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -196,6 +225,76 @@ export default function StudentProfilePage() {
             subtitle="Keep your contact, medical information, and origin records accurate."
           />
           <CardBody>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "1rem",
+                padding: "0.85rem 1rem",
+                marginBottom: "1.25rem",
+                background: "var(--color-surface-sunken, #f8fafc)",
+                border: "1px solid var(--color-border, #e2e8f0)",
+                borderRadius: "10px",
+              }}
+            >
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handlePhotoUpload}
+                style={{ display: "none" }}
+              />
+              <div
+                onClick={() => photoInputRef.current?.click()}
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: 10,
+                  overflow: "hidden",
+                  border: "2px solid var(--color-primary, #1e40af)",
+                  background: "#ffffff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 700,
+                  color: "var(--color-primary, #1e40af)",
+                  cursor: "pointer",
+                  flexShrink: 0,
+                }}
+              >
+                {!imgBroken && (localPhotoPreview || resolveMediaUrl(profile?.photoUrl || student.profile?.photoUrl)) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={
+                      localPhotoPreview ||
+                      resolveMediaUrl(profile?.photoUrl || student.profile?.photoUrl)
+                    }
+                    alt={student.user.fullName}
+                    onError={() => setImgBroken(true)}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                ) : (
+                  <Camera size={22} />
+                )}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>Passport Photograph</div>
+                <div style={{ fontSize: "0.78rem", color: "var(--color-muted)" }}>
+                  Used on your Digital Student Identity Card and official slips (JPG/PNG, max 5MB).
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                loading={uploadingPhoto}
+                leftIcon={<Upload size={14} />}
+                onClick={() => photoInputRef.current?.click()}
+              >
+                {uploadingPhoto ? "Uploading..." : "Upload Photo"}
+              </Button>
+            </div>
+
             <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                 <Field label="State of Origin">

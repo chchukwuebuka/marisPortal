@@ -24,6 +24,7 @@ export interface StudentContextValue {
   error: string | null;
   refreshStudent: () => Promise<void>;
   updateProfile: (data: Partial<StudentProfile>) => Promise<StudentProfile>;
+  uploadPhoto: (file: File) => Promise<StudentProfile>;
   addGuardian: (
     data: Omit<StudentGuardian, "id" | "createdAt">,
   ) => Promise<StudentGuardian>;
@@ -91,6 +92,15 @@ export function StudentProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  const uploadPhoto = useCallback(async (file: File) => {
+    const updated = await studentService.uploadStudentPhoto(file);
+    setProfile(updated);
+    setStudent((prev) =>
+      prev ? { ...prev, profile: { ...(prev.profile || {}), ...updated } } : null,
+    );
+    return updated;
+  }, []);
+
   const addGuardian = useCallback(
     async (payload: Omit<StudentGuardian, "id" | "createdAt">) => {
       const created = await studentService.addGuardian(payload);
@@ -114,6 +124,7 @@ export function StudentProvider({ children }: { children: React.ReactNode }) {
     error,
     refreshStudent: loadData,
     updateProfile,
+    uploadPhoto,
     addGuardian,
     removeGuardian,
   };
