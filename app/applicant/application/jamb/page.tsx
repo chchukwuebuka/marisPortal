@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, ArrowRight, CheckCircle2, GraduationCap } from "lucide-react";
+import { AlertCircle, ArrowRight } from "lucide-react";
 import { useApplication } from "@/hooks/useApplication";
 import { useCatalogue } from "@/hooks/useCatalogue";
 import { StepActions, StepPanel } from "@/components/application";
@@ -32,7 +32,7 @@ interface CutoffRejectionState {
 export default function JambStep() {
   const router = useRouter();
   const { application, updateJamb, updateProgramme } = useApplication();
-  const { findProgramme, findDepartment } = useCatalogue();
+  const { findProgramme, findDepartment, listProgrammes } = useCatalogue();
   const nav = stepNav("jamb");
   const j = application.jamb;
 
@@ -57,14 +57,12 @@ export default function JambStep() {
       { subject: "", score: ("" as unknown as number) },
       { subject: "", score: ("" as unknown as number) },
     ];
-  }, [j?.subjects]);
+  }, [j]);
 
   const {
     register,
     control,
     handleSubmit,
-    watch,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<JambInput, unknown, JambFormValues>({
     resolver: zodResolver(jambSchema),
@@ -78,16 +76,66 @@ export default function JambStep() {
     },
   });
 
-  const watchedSubjects = watch("subjects");
+  const watchedSubjects = useWatch({ control, name: "subjects" });
+  const [liveScores, setLiveScores] = useState<Record<number, number | "">>({});
 
-  // Auto-calculated total score
-  const totalScore = useMemo(() => {
-    if (!watchedSubjects || !Array.isArray(watchedSubjects)) return 0;
-    return watchedSubjects.reduce((sum, item) => {
-      const val = typeof item?.score === "number" ? item.score : parseInt(String(item?.score || ""), 10);
-      return sum + (isNaN(val) ? 0 : val);
-    }, 0);
-  }, [watchedSubjects]);
+  const resolvedScores: Array<number | ""> = [0, 1, 2, 3].map((idx) => {
+    if (idx in liveScores) {
+      return liveScores[idx];
+    }
+    const raw = watchedSubjects?.[idx]?.score ?? initialSubjects[idx]?.score;
+    if (typeof raw === "number" && Number.isFinite(raw)) {
+      return raw;
+    }
+    const parsed = parseInt(String(raw ?? ""), 10);
+    return Number.isFinite(parsed) ? parsed : "";
+  });
+
+  // Immediately calculated total score on every keystroke
+  const totalScore = resolvedScores.reduce<number>(
+    (sum, s) => sum + (typeof s === "number" ? s : 0),
+    0
+  );
+
+  const enteredScoresCount = resolvedScores.filter((s) => typeof s === "number").length;
+
+  // Live cut-off evaluation while typing (without waiting for Save & continue)
+  const liveCutoffWarning = useMemo<CutoffRejectionState | null>(() => {
+    if (cutoffRejection) return cutoffRejection;
+    const requiredCutoff = chosenProgramme?.cutoffMark;
+    if (requiredCutoff == null || enteredScoresCount < 4) return null;
+    if (totalScore >= requiredCutoff) return null;
+
+    const allProgs = listProgrammes();
+    const suggestions: ApiCutoffCheckSuggestion[] = allProgs
+      .filter(
+        (p) =>
+          p.id !== chosenProgramme?.id &&
+          p.cutoffMark != null &&
+          p.cutoffMark <= totalScore
+      )
+      .map((p) => ({
+        id: Number(p.id),
+        name: p.name,
+        code: p.code,
+        programme_type: p.level,
+        cutoff_mark: p.cutoffMark ?? 0,
+      }));
+
+    return {
+      programmeName: `${chosenProgramme?.level || ""} ${chosenProgramme?.name || ""}`.trim(),
+      requiredCutoff,
+      studentScore: totalScore,
+      message: `Your JAMB score of ${totalScore} does not meet the minimum cut-off mark of ${requiredCutoff} required for ${chosenProgramme?.level || ""} ${chosenProgramme?.name || ""}.`,
+      suggestions,
+    };
+  }, [
+    cutoffRejection,
+    chosenProgramme,
+    enteredScoresCount,
+    totalScore,
+    listProgrammes,
+  ]);
 
   async function onSubmit(values: JambFormValues) {
     setServerError(null);
@@ -131,9 +179,13 @@ export default function JambStep() {
 
       // Cut-off passed -> proceed
       router.push(nav.nextHref);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to save JAMB information:", err);
-      setServerError(err.message || "Failed to save JAMB information. Please check your inputs.");
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to save JAMB information. Please check your inputs.";
+      setServerError(message);
     }
   }
 
@@ -175,7 +227,7 @@ export default function JambStep() {
         )}
 
         {/* Cut-off rejection & alternative courses block */}
-        {cutoffRejection && (
+        {liveCutoffWarning && (
           <div
             style={{
               background: "#fef2f2",
@@ -192,22 +244,22 @@ export default function JambStep() {
                   Cut-Off Mark Requirement Not Met
                 </h4>
                 <p style={{ margin: "0 0 14px 0", color: "#7f1d1d", fontSize: "14px", lineHeight: 1.5 }}>
-                  {cutoffRejection.message || (
+                  {liveCutoffWarning.message || (
                     <>
-                      Your JAMB score of <strong>{cutoffRejection.studentScore}</strong> does not meet the
-                      minimum cut-off mark of <strong>{cutoffRejection.requiredCutoff}</strong> required for{" "}
-                      <strong>{cutoffRejection.programmeName}</strong>.
+                      Your JAMB score of <strong>{liveCutoffWarning.studentScore}</strong> does not meet the
+                      minimum cut-off mark of <strong>{liveCutoffWarning.requiredCutoff}</strong> required for{" "}
+                      <strong>{liveCutoffWarning.programmeName}</strong>.
                     </>
                   )}
                 </p>
 
-                {cutoffRejection.suggestions.length > 0 ? (
+                {liveCutoffWarning.suggestions.length > 0 ? (
                   <>
                     <p style={{ margin: "0 0 10px 0", color: "#1e3a8a", fontSize: "13px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em" }}>
                       Suggested Programmes Matching Your Score:
                     </p>
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "16px" }}>
-                      {cutoffRejection.suggestions.map((prog) => {
+                      {liveCutoffWarning.suggestions.map((prog) => {
                         const localProg = findProgramme(String(prog.id));
                         const dept = localProg ? findDepartment(localProg.departmentId) : null;
                         return (
@@ -267,14 +319,16 @@ export default function JambStep() {
                   >
                     Change Programme Selection
                   </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setCutoffRejection(null)}
-                  >
-                    Edit Subject Scores
-                  </Button>
+                  {cutoffRejection && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCutoffRejection(null)}
+                    >
+                      Edit Subject Scores
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -282,7 +336,7 @@ export default function JambStep() {
         )}
 
         {/* Live cut-off reminder banner */}
-        {chosenProgramme?.cutoffMark != null && !cutoffRejection && (
+        {chosenProgramme?.cutoffMark != null && !liveCutoffWarning && (
           <div
             style={{
               background: "#eff6ff",
@@ -527,22 +581,34 @@ export default function JambStep() {
                         <div>
                           <input
                             type="number"
+                            inputMode="numeric"
                             min={0}
                             max={100}
                             placeholder="0–100"
-                            value={
-                              typeof field.value === "number" ||
-                              typeof field.value === "string"
-                                ? field.value
-                                : ""
-                            }
+                            value={resolvedScores[idx]}
                             onChange={(e) => {
                               const val = e.target.value;
+                              if (cutoffRejection) {
+                                setCutoffRejection(null);
+                              }
                               if (val === "") {
+                                setLiveScores((prev) => ({
+                                  ...prev,
+                                  [idx]: "",
+                                }));
                                 field.onChange("" as unknown as number);
                               } else {
-                                const num = Math.max(0, Math.min(100, Number(val)));
-                                field.onChange(num);
+                                const parsed = parseInt(val, 10);
+                                const num = Number.isNaN(parsed)
+                                  ? ("" as const)
+                                  : Math.max(0, Math.min(100, parsed));
+                                setLiveScores((prev) => ({
+                                  ...prev,
+                                  [idx]: num,
+                                }));
+                                field.onChange(
+                                  num === "" ? ("" as unknown as number) : num
+                                );
                               }
                             }}
                             style={{
@@ -574,8 +640,18 @@ export default function JambStep() {
             {/* Total Score Summary Footer */}
             <div
               style={{
-                background: "var(--color-primary-soft, #eff6ff)",
-                borderTop: "2px solid var(--color-primary, #2563eb)",
+                background:
+                  chosenProgramme?.cutoffMark != null &&
+                  enteredScoresCount === 4 &&
+                  totalScore < chosenProgramme.cutoffMark
+                    ? "#fef2f2"
+                    : "var(--color-primary-soft, #eff6ff)",
+                borderTop:
+                  chosenProgramme?.cutoffMark != null &&
+                  enteredScoresCount === 4 &&
+                  totalScore < chosenProgramme.cutoffMark
+                    ? "2px solid #dc2626"
+                    : "2px solid var(--color-primary, #2563eb)",
                 padding: "14px 18px",
                 display: "flex",
                 alignItems: "center",
@@ -587,11 +663,35 @@ export default function JambStep() {
                   Total JAMB Score
                 </span>
                 <span style={{ display: "block", fontSize: "12px", color: "var(--color-muted)" }}>
-                  Automatically calculated (sum of 4 subjects)
+                  {chosenProgramme?.cutoffMark != null && enteredScoresCount > 0 ? (
+                    totalScore >= chosenProgramme.cutoffMark ? (
+                      <span style={{ color: "#15803d", fontWeight: 600 }}>
+                        Meets required cut-off mark ({chosenProgramme.cutoffMark})
+                      </span>
+                    ) : (
+                      <span style={{ color: "#dc2626", fontWeight: 600 }}>
+                        Required cut-off: {chosenProgramme.cutoffMark} ({chosenProgramme.cutoffMark - totalScore} more point{chosenProgramme.cutoffMark - totalScore === 1 ? "" : "s"} needed)
+                      </span>
+                    )
+                  ) : (
+                    "Automatically calculated as you type (sum of 4 subjects)"
+                  )}
                 </span>
               </div>
               <div style={{ textAlign: "right" }}>
-                <span style={{ fontSize: "24px", fontWeight: 800, color: "var(--color-primary, #1e40af)", fontFamily: "monospace" }}>
+                <span
+                  style={{
+                    fontSize: "24px",
+                    fontWeight: 800,
+                    color:
+                      chosenProgramme?.cutoffMark != null &&
+                      enteredScoresCount === 4 &&
+                      totalScore < chosenProgramme.cutoffMark
+                        ? "#dc2626"
+                        : "var(--color-primary, #1e40af)",
+                    fontFamily: "monospace",
+                  }}
+                >
                   {totalScore}
                 </span>
                 <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--color-muted)", marginLeft: "4px" }}>

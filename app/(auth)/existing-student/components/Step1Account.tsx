@@ -307,7 +307,7 @@ export function Step1Account({
             <Info size={18} />
             <span>
               <strong>Important:</strong> Your matriculation number will be cross-referenced with
-              Marist Polytechnic's historical records. Ensure your name and phone match your official
+              Marist Polytechnic&apos;s historical records. Ensure your name and phone match your official
               admission credentials.
             </span>
           </div>
