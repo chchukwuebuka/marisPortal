@@ -314,10 +314,14 @@ export function Step1Account({
 
           <form onSubmit={handleStartRegistration} className={styles.form}>
             <div className={styles.formGrid2}>
-              <Field label="Institutional Matriculation Number" required>
+              <Field
+                label="Institutional Matriculation Number"
+                hint="Format: MAR/DEPARTMENT/YY/NNN — e.g. MAR/CSC/22/042 (as on your ID card or admission letter)."
+                required
+              >
                 <div style={{ display: "flex", gap: "8px" }}>
                   <Input
-                    placeholder="e.g. MAP/ND/CS/2022/0042"
+                    placeholder="e.g. MAR/CSC/22/042"
                     value={startForm.matric_number}
                     onChange={(e) =>
                       setStartForm({ ...startForm, matric_number: e.target.value.toUpperCase() })

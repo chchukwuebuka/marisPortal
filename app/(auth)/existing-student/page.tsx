@@ -468,6 +468,14 @@ export default function ExistingStudentOnboardingPage() {
       setErrorMsg("Please enter your existing Matriculation Number.");
       return;
     }
+    // Same institutional format the backend enforces: MAR/DEPT/YY/NNN.
+    const matric = startForm.matric_number.replace(/\s+/g, "").toUpperCase().replace(/[\\-]/g, "/");
+    if (!/^MAR\/[A-Z][A-Z0-9]{1,9}\/\d{2}\/\d{3,4}$/.test(matric)) {
+      setErrorMsg(
+        "Enter your matriculation number in the official format MAR/DEPARTMENT/YY/NNN, e.g. MAR/CSC/22/042."
+      );
+      return;
+    }
     if (!startForm.first_name?.trim() || !startForm.last_name?.trim()) {
       setErrorMsg("First name and Last name are required.");
       return;
