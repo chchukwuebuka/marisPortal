@@ -135,5 +135,6 @@ export interface LegacyProfileInput {
   guardian_occupation?: string;
   programme?: number;
   admission_session?: number;
+  admission_session_name?: string;
   current_level?: number;
 }

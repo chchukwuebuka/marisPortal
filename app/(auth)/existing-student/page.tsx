@@ -332,6 +332,13 @@ export default function ExistingStudentOnboardingPage() {
       }
     } else if (reg.admission_session_name) {
       setSessionInputText(reg.admission_session_name);
+    } else if (reg.matric_number) {
+      const m = reg.matric_number.match(/^MAR\/[A-Z0-9]+\/(\d{2})\/\d+$/i);
+      if (m) {
+        const yy = parseInt(m[1], 10);
+        const startYr = yy < 80 ? 2000 + yy : 1900 + yy;
+        setSessionInputText(`${startYr}/${startYr + 1}`);
+      }
     }
 
     if (reg.programme) {
@@ -607,11 +614,30 @@ export default function ExistingStudentOnboardingPage() {
       return;
     }
 
+    function normalizeSessionText(raw: string): string | undefined {
+      const trimmed = raw.trim();
+      const m = trimmed.match(/^((?:19|20)\d{2})\s*[/-]\s*((?:19|20)\d{2})$/);
+      if (m) {
+        const y1 = parseInt(m[1], 10);
+        const y2 = parseInt(m[2], 10);
+        if (y2 === y1 + 1) return `${y1}/${y2}`;
+        return undefined;
+      }
+      if (/^(?:19|20)\d{2}$/.test(trimmed)) {
+        const y1 = parseInt(trimmed, 10);
+        return `${y1}/${y1 + 1}`;
+      }
+      return undefined;
+    }
+
+    const normalizedSessionName = normalizeSessionText(sessionInputText);
     const resolvedSessionId =
-      resolveSessionId(sessionInputText) || profileForm.admission_session;
-    if (!resolvedSessionId) {
+      resolveSessionId(normalizedSessionName || sessionInputText) ||
+      (!sessionInputText.trim() ? profileForm.admission_session : undefined);
+
+    if (!normalizedSessionName && !resolvedSessionId) {
       setErrorMsg(
-        "Please enter or select a valid Admission Session (e.g. 2021/2022)."
+        "Please enter or select a valid Admission Session in YYYY/YYYY format (e.g. 2024/2025, 2025/2026)."
       );
       return;
     }
@@ -631,13 +657,17 @@ export default function ExistingStudentOnboardingPage() {
       const payload: Partial<LegacyProfileInput> = {
         ...profileForm,
         admission_session: resolvedSessionId,
+        admission_session_name: normalizedSessionName || sessionInputText.trim(),
       };
 
       const updated = await updateMyLegacyProfile(payload);
       setRegistration(updated);
+      if (updated.admission_session_name) {
+        setSessionInputText(updated.admission_session_name);
+      }
       setProfileForm((prev) => ({
         ...prev,
-        admission_session: resolvedSessionId,
+        admission_session: updated.admission_session ?? resolvedSessionId,
       }));
       setSuccessMsg("Academic and profile details saved successfully.");
       await reloadRequirementsAndTimeline();

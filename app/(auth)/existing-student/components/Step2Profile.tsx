@@ -135,8 +135,21 @@ export function Step2Profile({
     <Card className={styles.card}>
       {/* Session Datalist for Historical / Custom Sessions */}
       <datalist id="session-datalist">
-        {sessions.map((s) => (
-          <option key={s.id} value={s.name} />
+        {Array.from(
+          new Set([
+            ...sessions.map((s) => s.name),
+            "2026/2027",
+            "2025/2026",
+            "2024/2025",
+            "2023/2024",
+            "2022/2023",
+            "2021/2022",
+            "2020/2021",
+            "2019/2020",
+            "2018/2019",
+          ])
+        ).map((name) => (
+          <option key={name} value={name} />
         ))}
       </datalist>
 
@@ -273,11 +286,15 @@ export function Step2Profile({
             </Field>
 
             {/* Admission Session Input with DataList for Historical / Custom Sessions */}
-            <Field label="Admission Session (Year of Entry)" required>
+            <Field
+              label="Admission Session (Year of Entry)"
+              hint="Select or type the session you were admitted, e.g. 2024/2025, 2025/2026."
+              required
+            >
               <Input
                 type="text"
                 list="session-datalist"
-                placeholder="e.g. 2021/2022, 2019/2020"
+                placeholder="e.g. 2024/2025, 2025/2026"
                 value={sessionInputText}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -287,7 +304,7 @@ export function Step2Profile({
                   );
                   setProfileForm((prev) => ({
                     ...prev,
-                    admission_session: matched ? Number(matched.id) : prev.admission_session,
+                    admission_session: matched ? Number(matched.id) : undefined,
                   }));
                 }}
                 required
