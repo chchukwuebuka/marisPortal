@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -9,6 +9,7 @@ import { z } from "zod";
 import { UserPlus } from "lucide-react";
 import { Alert, Button, Checkbox, Field, Input } from "@/components/ui";
 import { register as registerAccount } from "@/services/auth";
+import { checkAdmissionStatus } from "@/services/catalogue";
 import { ApiError } from "@/lib/api";
 import styles from "../auth.module.css";
 
@@ -47,6 +48,27 @@ const FIELD_MAP: Record<string, keyof RegisterValues> = {
 export default function RegisterPage() {
   const router = useRouter();
   const [formError, setFormError] = useState<string | null>(null);
+  const [sessionClosedInfo, setSessionClosedInfo] = useState<{
+    closed: boolean;
+    sessionName: string;
+  }>({ closed: false, sessionName: "" });
+
+  useEffect(() => {
+    let mounted = true;
+    checkAdmissionStatus().then((status) => {
+      if (!mounted) return;
+      if (!status.isOpen) {
+        setSessionClosedInfo({
+          closed: true,
+          sessionName: status.sessionName,
+        });
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const {
     register,
     handleSubmit,
@@ -105,6 +127,14 @@ export default function RegisterPage() {
         </p>
       </div>
 
+      {sessionClosedInfo.closed && (
+        <Alert tone="warning" title="Admission Applications Closed" className={styles.demoNote}>
+          Admission applications for the{" "}
+          <strong>{sessionClosedInfo.sessionName} Academic Session</strong> are currently
+          closed. You will be able to register and apply once the session is opened.
+        </Alert>
+      )}
+
       {formError && (
         <Alert tone="error" className={styles.demoNote}>
           {formError}
@@ -112,6 +142,10 @@ export default function RegisterPage() {
       )}
 
       <form className={styles.form} onSubmit={handleSubmit(onSubmit)} noValidate>
+        <fieldset
+          disabled={sessionClosedInfo.closed}
+          style={{ border: "none", padding: 0, margin: 0, display: "contents" }}
+        >
         <div className={styles.row}>
           <Field label="First name" error={errors.firstName?.message} required>
             <Input
@@ -175,12 +209,14 @@ export default function RegisterPage() {
         <Button
           type="submit"
           fullWidth
+          disabled={sessionClosedInfo.closed}
           loading={isSubmitting}
           leftIcon={<UserPlus size={16} />}
           className={styles.submit}
         >
-          Create account
+          {sessionClosedInfo.closed ? "Admissions Closed" : "Create account"}
         </Button>
+        </fieldset>
       </form>
       <div style={{ marginTop: "20px", padding: "12px 16px", borderRadius: "10px", background: "rgba(36, 71, 159, 0.06)", border: "1px solid rgba(36, 71, 159, 0.15)", fontSize: "13px", textAlign: "center" }}>
         <span style={{ color: "#475569" }}>Already hold an institutional matric number? </span>

@@ -51,6 +51,7 @@ export interface AdmissionOptionsResponse {
   session?: string;
   session_id?: number;
   is_open?: boolean;
+  is_active?: boolean;
   schools: ApiSchool[];
 }
 
@@ -68,6 +69,46 @@ export async function getAdmissionOptions(
     },
   );
   return data;
+}
+
+export interface AdmissionStatus {
+  isOpen: boolean;
+  sessionName: string;
+}
+
+/**
+ * Robustly inspect whether admission applications for the current academic session are open.
+ */
+export async function checkAdmissionStatus(): Promise<AdmissionStatus> {
+  try {
+    const adm = await getAdmissionOptions();
+    if (adm) {
+      const raw = adm as unknown as Record<string, unknown>;
+      const isOpen =
+        Boolean(adm.is_open ?? true) && Boolean(raw.is_active ?? true);
+      return {
+        isOpen,
+        sessionName: adm.session || "2026/2027",
+      };
+    }
+  } catch (err) {
+    console.warn("getAdmissionOptions failed, trying sessions fallback:", err);
+  }
+
+  try {
+    const sessions = await getSessions();
+    if (sessions.length > 0) {
+      const current = sessions.find((s) => s.isActive) ?? sessions[0];
+      return {
+        isOpen: Boolean(current.isActive),
+        sessionName: current.name || "2026/2027",
+      };
+    }
+  } catch (err) {
+    console.warn("getSessions fallback failed:", err);
+  }
+
+  return { isOpen: true, sessionName: "2026/2027" };
 }
 
 function extractList<T>(raw: unknown): T[] {

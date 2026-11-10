@@ -22,6 +22,7 @@ export default function StudentCoursesPage() {
   const { student } = useStudent();
   const [courses, setCourses] = useState<Course[]>([]);
   const [currentReg, setCurrentReg] = useState<CourseRegistration | null>(null);
+  const [isRegOpen, setIsRegOpen] = useState<boolean>(true);
   const [loading, setLoading] = useState(true);
   const [filterSemester, setFilterSemester] = useState<string>("all");
 
@@ -35,6 +36,7 @@ export default function StudentCoursesPage() {
         ]);
         setCourses(courseList);
         setCurrentReg(regRes.registration);
+        setIsRegOpen(regRes.isRegistrationOpen ?? true);
       } catch (err) {
         console.warn("Failed to load courses or registration:", err);
       } finally {
@@ -87,6 +89,14 @@ export default function StudentCoursesPage() {
       />
 
       {/* Registration Status Callout */}
+      {!isRegOpen && currentReg?.status !== "approved" && (
+        <div style={{ marginBottom: "1.5rem" }}>
+          <Alert tone="warning" title="Academic Session / Course Registration Closed">
+            Course registration is currently closed for this academic session. Registration will resume once the Academic Registry opens the session.
+          </Alert>
+        </div>
+      )}
+
       {currentReg && (
         <div style={{ marginBottom: "1.5rem" }}>
           {currentReg.status === "approved" ? (

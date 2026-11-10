@@ -88,10 +88,14 @@ export function CatalogueProvider({
             const prgList: Programme[] = [];
 
             const sessId = adm.session_id != null ? String(adm.session_id) : "1";
+            const rawAdm = adm as unknown as Record<string, unknown>;
+            const isSessionOpen =
+              Boolean(adm.is_open ?? true) &&
+              Boolean(rawAdm.is_active ?? true);
             const sessObj: AcademicSession = {
               id: sessId,
               name: adm.session || "Current Session",
-              isActive: adm.is_open ?? true,
+              isActive: isSessionOpen,
               applicationDeadline: "",
             };
 
@@ -187,7 +191,7 @@ export function CatalogueProvider({
   );
 
   const findActiveSession = useCallback(
-    () => sessions.find((s) => s.isActive) ?? sessions[0] ?? FALLBACK_SESSION,
+    () => sessions[0] ?? FALLBACK_SESSION,
     [sessions],
   );
 

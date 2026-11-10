@@ -11,6 +11,7 @@ import { useApplication } from "@/hooks/useApplication";
 import { useCatalogue } from "@/hooks/useCatalogue";
 import { PageHeader } from "@/components/layout";
 import {
+  Alert,
   AppStatusTag,
   Button,
   Card,
@@ -76,6 +77,14 @@ export default function DashboardPage() {
         title={`Welcome, ${applicant.firstName}`}
         description="Complete each section, then submit your application for review."
       />
+
+      {!session.isActive && application.status === "draft" && (
+        <div style={{ marginBottom: "1.25rem" }}>
+          <Alert tone="warning" title="Academic Session Closed — Admission Applications Paused">
+            Admission applications for the <strong>{session.name} Academic Session</strong> are currently closed. You will be able to fill and submit your admission application as soon as the session is opened.
+          </Alert>
+        </div>
+      )}
 
       <div className={styles.grid}>
         <div className={styles.mainCol}>

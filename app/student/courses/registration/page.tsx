@@ -31,44 +31,49 @@ export default function CourseRegistrationPage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    let mounted = true;
+    async function loadData() {
+      setLoading(true);
+      setErrorMsg(null);
+      try {
+        const [avail, cur] = await Promise.all([
+          getAvailableCourses(),
+          getCurrentRegistration(),
+        ]);
+        if (!mounted) return;
+        setAvailableData(avail);
+        setCurrentReg(cur.registration);
 
-  async function loadData() {
-    setLoading(true);
-    setErrorMsg(null);
-    try {
-      const [avail, cur] = await Promise.all([
-        getAvailableCourses(),
-        getCurrentRegistration(),
-      ]);
-      setAvailableData(avail);
-      setCurrentReg(cur.registration);
+        const initialSelected = new Set<number>();
+        // Always preselect compulsory courses
+        avail.compulsoryCourses.forEach((c: AvailableCourseEntry) => initialSelected.add(c.course));
 
-      const initialSelected = new Set<number>();
-      // Always preselect compulsory courses
-      avail.compulsoryCourses.forEach((c: AvailableCourseEntry) => initialSelected.add(c.course));
-
-      // If current registration has items (draft or submitted), mirror them
-      if (cur.registration?.items && cur.registration.items.length > 0) {
-        cur.registration.items.forEach((item: CourseRegistrationItem) => {
-          if (item.status !== "dropped") {
-            initialSelected.add(item.course.id);
-          }
-        });
+        // If current registration has items (draft or submitted), mirror them
+        if (cur.registration?.items && cur.registration.items.length > 0) {
+          cur.registration.items.forEach((item: CourseRegistrationItem) => {
+            if (item.status !== "dropped") {
+              initialSelected.add(item.course.id);
+            }
+          });
+        }
+        setSelectedIds(initialSelected);
+      } catch (err: unknown) {
+        if (!mounted) return;
+        console.error("Failed to load registration data:", err);
+        setErrorMsg(
+          err instanceof Error
+            ? err.message
+            : "Could not load course registration details. Please verify your student profile."
+        );
+      } finally {
+        if (mounted) setLoading(false);
       }
-      setSelectedIds(initialSelected);
-    } catch (err: unknown) {
-      console.error("Failed to load registration data:", err);
-      setErrorMsg(
-        err instanceof Error
-          ? err.message
-          : "Could not load course registration details. Please verify your student profile."
-      );
-    } finally {
-      setLoading(false);
     }
-  }
+    void loadData();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Calculate live total credits
   const compulsoryCredits = (availableData?.compulsoryCourses || []).reduce(
@@ -88,7 +93,11 @@ export default function CourseRegistrationPage() {
   const isAboveMax = totalCredits > maxCredits;
   const isCreditValid = !isBelowMin && !isAboveMax;
 
-  const isLocked = currentReg?.status === "approved" || currentReg?.status === "submitted";
+  const isRegWindowClosed = availableData ? !availableData.isRegistrationOpen : false;
+  const isLocked =
+    isRegWindowClosed ||
+    currentReg?.status === "approved" ||
+    currentReg?.status === "submitted";
 
   function toggleElective(courseId: number) {
     if (isLocked) return;
@@ -329,6 +338,19 @@ export default function CourseRegistrationPage() {
       />
 
       {/* ── Alert messages ────────────────────────────────────────── */}
+      {isRegWindowClosed && (
+        <div style={{ marginBottom: "1.5rem" }}>
+          <Alert tone="warning" title="Academic Session / Registration Closed">
+            Course registration for{" "}
+            <strong>
+              {availableData?.session?.name || "the current academic session"} (
+              {availableData?.semester?.name || "Active Semester"})
+            </strong>{" "}
+            is currently closed. You will be able to register courses once the Academic Registry opens the session.
+          </Alert>
+        </div>
+      )}
+
       {successMsg && (
         <div style={{ marginBottom: "1.5rem" }}>
           <Alert tone="success" title="Success">

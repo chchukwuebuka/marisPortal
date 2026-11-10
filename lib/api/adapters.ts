@@ -173,10 +173,13 @@ function idToStr(v: unknown): string {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function toDomainSession(s: any): AcademicSession {
+  const isOpen =
+    Boolean(s.is_active ?? s.active ?? true) &&
+    Boolean(s.is_open ?? s.application_open ?? true);
   return {
     id: idToStr(s.id),
     name: s.name || s.title || "Current Session",
-    isActive: Boolean(s.is_active ?? s.active ?? s.is_open ?? true),
+    isActive: isOpen,
     applicationDeadline: s.application_deadline ?? "",
   };
 }

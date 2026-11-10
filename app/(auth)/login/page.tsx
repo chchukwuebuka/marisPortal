@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -9,6 +9,7 @@ import { z } from "zod";
 import { LogIn } from "lucide-react";
 import { Alert, Button, Checkbox, Field, Input, Spinner } from "@/components/ui";
 import { useAuth } from "@/hooks/useAuth";
+import { checkAdmissionStatus } from "@/services/catalogue";
 import { ApiError } from "@/lib/api";
 import styles from "../auth.module.css";
 
@@ -32,6 +33,27 @@ function LoginForm() {
   const { login } = useAuth();
   const [formError, setFormError] = useState<string | null>(null);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [sessionClosedInfo, setSessionClosedInfo] = useState<{
+    closed: boolean;
+    sessionName: string;
+  }>({ closed: false, sessionName: "" });
+
+  useEffect(() => {
+    let mounted = true;
+    checkAdmissionStatus().then((status) => {
+      if (!mounted) return;
+      if (!status.isOpen) {
+        setSessionClosedInfo({
+          closed: true,
+          sessionName: status.sessionName,
+        });
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const {
     register,
     handleSubmit,
@@ -91,9 +113,24 @@ function LoginForm() {
       <div className={styles.head}>
         <h2 className={styles.title}>Welcome back</h2>
         <p className={styles.subtitle}>
-          Sign in to continue your application.
+          {sessionClosedInfo.closed
+            ? "Sign in to access your student or applicant portal."
+            : "Sign in to continue your application."}
         </p>
       </div>
+
+      {sessionClosedInfo.closed && (
+        <Alert
+          tone="warning"
+          title="Admissions Currently Closed"
+          className={styles.demoNote}
+        >
+          Admission applications for the{" "}
+          <strong>{sessionClosedInfo.sessionName} Academic Session</strong> are
+          currently closed. New applicants cannot apply at this time. Admitted
+          students and registered applicants can sign in below.
+        </Alert>
+      )}
 
       {formError && (
         <Alert tone="error" className={styles.demoNote}>
@@ -157,7 +194,19 @@ function LoginForm() {
       </div>
 
       <p className={styles.switch}>
-        New to Marist Polytechnic? <Link href="/register">Create an account</Link>
+        {sessionClosedInfo.closed ? (
+          <span style={{ color: "var(--muted, #64748b)" }}>
+            New to Marist Polytechnic?{" "}
+            <span style={{ fontWeight: 600, color: "#d97706" }}>
+              Admissions currently closed
+            </span>
+          </span>
+        ) : (
+          <>
+            New to Marist Polytechnic?{" "}
+            <Link href="/register">Create an account</Link>
+          </>
+        )}
       </p>
     </div>
   );

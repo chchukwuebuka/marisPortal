@@ -165,8 +165,13 @@ export function ApplicationProvider({
       if (apps.length > 0) {
         appId = apps[0].id;
       } else {
-        // No application yet — create one for the active session
+        // No application yet — create one for the active session if open
         const session = findActiveSession();
+        if (!session.isActive) {
+          setHydrated(true);
+          setApiLoading(false);
+          return;
+        }
         const sessionId = toApiId(session.id);
         if (!sessionId) throw new Error("No active session found");
         const created = await appApi.createApplication(sessionId);
