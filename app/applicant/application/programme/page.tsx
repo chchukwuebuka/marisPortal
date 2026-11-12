@@ -212,14 +212,11 @@ export default function ProgrammeStep() {
 
   const rawDepartments = listDepartments(selectedSchoolId);
 
-  // Filter departments that have programmes matching the active category
+  // Show all departments belonging to the selected faculty/school from the handbook
   const filteredDepartments = useMemo(() => {
     if (!selectedSchoolId) return [];
-    return rawDepartments.filter((d) => {
-      const progs = listProgrammes(d.id);
-      return progs.some((p) => isProgForCategory(p, programmeCategory));
-    });
-  }, [rawDepartments, selectedSchoolId, listProgrammes, programmeCategory, isProgForCategory]);
+    return rawDepartments;
+  }, [rawDepartments, selectedSchoolId]);
 
   const rawProgrammes = listProgrammes(selectedDepartmentId);
 
@@ -498,14 +495,28 @@ export default function ProgrammeStep() {
           >
             <Select
               value={selectedProgrammeId}
-              placeholder={programmeCategory === "DEGREE" ? "Select a degree programme" : "Select an ND programme"}
-              disabled={!selectedDepartmentId}
+              placeholder={
+                programmeCategory === "DEGREE"
+                  ? "Select a degree programme"
+                  : "Select an ND programme"
+              }
+              disabled={!selectedDepartmentId || availableProgrammes.length === 0}
               onChange={handleProgrammeChange}
-              options={availableProgrammes.map((prog) => ({
-                value: prog.id,
-                label: formatProgrammeOptionLabel(prog),
-                disabled: !prog.acceptingApplications,
-              }))}
+              options={
+                availableProgrammes.length === 0 && selectedDepartmentId
+                  ? [
+                      {
+                        value: "",
+                        label: `No ${programmeCategory === "DEGREE" ? "degree" : "ND"} programmes currently open in this department`,
+                        disabled: true,
+                      },
+                    ]
+                  : availableProgrammes.map((prog) => ({
+                      value: prog.id,
+                      label: formatProgrammeOptionLabel(prog),
+                      disabled: !prog.acceptingApplications,
+                    }))
+              }
             />
           </Field>
         </div>
