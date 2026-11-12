@@ -59,6 +59,12 @@ export default function JambStep() {
     ];
   }, [j]);
 
+  const isInternational = application.entryMode === "INTERNATIONAL";
+  const isDirectTrack =
+    application.entryMode === "DE" ||
+    application.entryMode === "JUPEB" ||
+    application.entryMode === "TRANSFER";
+
   const {
     register,
     control,
@@ -67,11 +73,19 @@ export default function JambStep() {
   } = useForm<JambInput, unknown, JambFormValues>({
     resolver: zodResolver(jambSchema),
     defaultValues: {
-      registrationNumber: j?.registrationNumber ?? "",
-      examYear: j?.examYear != null ? j.examYear : (new Date().getFullYear() as unknown as number),
-      examType: j?.examType ?? "UTME",
-      firstChoiceInstitution: j?.firstChoiceInstitution ?? "",
-      courseApplied: j?.courseApplied ?? "",
+      registrationNumber:
+        j?.registrationNumber ??
+        (isInternational ? "INTERNATIONAL-EXEMPT" : ""),
+      examYear:
+        j?.examYear != null
+          ? j.examYear
+          : (new Date().getFullYear() as unknown as number),
+      examType:
+        j?.examType ?? (isDirectTrack || isInternational ? "Direct Entry" : "UTME"),
+      firstChoiceInstitution:
+        j?.firstChoiceInstitution ??
+        (isInternational ? "Marist Polytechnic / AE-FUNAI" : ""),
+      courseApplied: j?.courseApplied ?? chosenProgramme?.name ?? "",
       subjects: initialSubjects,
     },
   });
@@ -144,9 +158,12 @@ export default function JambStep() {
     setCutoffRejection(null);
 
     try {
-      if (values.examType === "Direct Entry") {
+      if (values.examType === "Direct Entry" || isDirectTrack || isInternational) {
         await updateJamb({
           ...values,
+          registrationNumber:
+            values.registrationNumber || (isInternational ? "INTERNATIONAL-EXEMPT" : ""),
+          examType: "Direct Entry",
           subjects: [],
           score: undefined,
         });
@@ -448,8 +465,8 @@ export default function JambStep() {
 
         <hr className={form.divider} style={{ margin: "24px 0" }} />
 
-        {/* Direct Entry Notice OR 4 UTME Subjects Table */}
-        {watchedExamType === "Direct Entry" ? (
+        {/* Direct Entry / Exemption Notice OR 4 UTME Subjects Table */}
+        {watchedExamType === "Direct Entry" || isDirectTrack || isInternational ? (
           <div
             style={{
               background: "#eff6ff",
@@ -460,15 +477,25 @@ export default function JambStep() {
             }}
           >
             <h4 style={{ color: "#1e40af", fontSize: "16px", fontWeight: 700, margin: "0 0 8px 0" }}>
-              Direct Entry (200 Level Admission Track)
+              {isInternational
+                ? "International Student Track (JAMB Exemption)"
+                : application.entryMode === "JUPEB"
+                ? "JUPEB / IJMB Foundation (Direct Entry Track)"
+                : application.entryMode === "TRANSFER"
+                ? "Inter-University Transfer Track"
+                : "Direct Entry (200 Level Admission Track)"}
             </h4>
             <p style={{ color: "#1e3a8a", fontSize: "14px", lineHeight: 1.6, margin: "0 0 12px 0" }}>
-              As a Direct Entry applicant into the Degree Programme, your admission is evaluated based on your
-              qualifying tertiary credential (National Diploma, NCE, IJMB, JUPEB, or A-Levels) along with your
-              5 O&apos;Level credit passes.
+              {isInternational
+                ? "As an international applicant applying with foreign secondary/high school credentials, you are exempt from Nigerian JAMB examinations. Your admission into the Degree Programme is evaluated based on your high school transcript, international passport, and credential evaluation."
+                : application.entryMode === "JUPEB"
+                ? "As a JUPEB / IJMB applicant, your admission into the 200 Level Degree Programme is evaluated based on your Advanced Level point score together with your 5 qualifying O'Level credit passes."
+                : application.entryMode === "TRANSFER"
+                ? "As an Inter-University / Inter-Polytechnic Transfer applicant, your admission is evaluated based on your official academic transcript and transfer clearance from your former institution."
+                : "As a Direct Entry applicant into the Degree Programme (200 Level), your admission is evaluated based on your qualifying tertiary credential (National Diploma, NCE, HND, or A-Levels) along with your 5 O'Level credit passes."}
             </p>
             <p style={{ color: "#1e40af", fontSize: "13px", margin: 0, fontWeight: 600 }}>
-              ✓ You do not need to enter 4 UTME subject test scores. Please verify your prior tertiary institution and qualification details in the Educational Background step.
+              ✓ You do not need to enter 4 UTME subject test scores. Please verify your prior institution details in the Educational Background step, and upload your qualifying credentials in the Documents step.
             </p>
           </div>
         ) : (

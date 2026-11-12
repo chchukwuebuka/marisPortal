@@ -1,6 +1,7 @@
 import type {
   ApplicationStatus,
   DocumentStatus,
+  EntryMode,
   ExamType,
   Gender,
   InvoiceStatus,
@@ -79,6 +80,7 @@ export interface ProgrammeSelection {
   schoolId: string;
   departmentId: string;
   programmeId: string;
+  entryMode?: EntryMode;
 }
 
 export interface EducationRecord {
@@ -130,6 +132,7 @@ export interface DocumentRequirement {
   allowedFileTypes: string[]; // e.g. ["pdf", "jpg", "png"]
   maxFileSizeMb: number;
   programmeId?: string | null; // null => applies to all programmes
+  entryMode?: string | null;
   active: boolean;
 }
 
@@ -244,6 +247,7 @@ export interface Application {
   personal?: Partial<PersonalInfo>;
   contact?: Partial<ContactInfo>;
   programme?: Partial<ProgrammeSelection>;
+  entryMode?: EntryMode;
   education: EducationRecord[];
   olevel: OLevelResult[];
   presentingTwoSittings: boolean;

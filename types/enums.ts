@@ -54,9 +54,51 @@ export const MARITAL_STATUSES = [
 ] as const;
 export type MaritalStatus = (typeof MARITAL_STATUSES)[number];
 
-// Mirrors the API's programme types (ND / Certificate).
-export const PROGRAMME_LEVELS = ["ND", "CERT"] as const;
+// Mirrors the API's programme types (ND / BSC / BENG / CERT).
+export const PROGRAMME_LEVELS = ["ND", "BSC", "BENG", "DEGREE", "CERT"] as const;
 export type ProgrammeLevel = (typeof PROGRAMME_LEVELS)[number];
+
+export const ENTRY_MODES = [
+  "UTME",
+  "DE",
+  "INTERNATIONAL",
+  "JUPEB",
+  "TRANSFER",
+] as const;
+export type EntryMode = (typeof ENTRY_MODES)[number];
+
+export const ENTRY_MODE_OPTIONS: { value: EntryMode; label: string; badge: string; description: string }[] = [
+  {
+    value: "UTME",
+    label: "UTME (100 Level)",
+    badge: "100 Level",
+    description: "Standard UTME admission for candidates with official JAMB UTME score.",
+  },
+  {
+    value: "DE",
+    label: "Direct Entry (200 Level)",
+    badge: "200 Level",
+    description: "For holders of National Diploma (ND), NCE, HND, or GCE A-Level seeking 200 Level admission.",
+  },
+  {
+    value: "INTERNATIONAL",
+    label: "International Student",
+    badge: "International",
+    description: "For foreign / non-Nigerian applicants applying with foreign high school qualifications.",
+  },
+  {
+    value: "JUPEB",
+    label: "JUPEB / IJMB Foundation",
+    badge: "Foundation / DE",
+    description: "For candidates with completed JUPEB or IJMB Advanced Level qualifications.",
+  },
+  {
+    value: "TRANSFER",
+    label: "Inter-University Transfer",
+    badge: "Transfer",
+    description: "For students currently enrolled in recognized universities or polytechnics seeking transfer.",
+  },
+];
 
 export const JAMB_EXAM_TYPES = ["UTME", "Direct Entry"] as const;
 export type JambExamType = (typeof JAMB_EXAM_TYPES)[number];

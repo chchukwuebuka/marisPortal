@@ -25,7 +25,18 @@ import { cn } from "@/lib/cn";
 import { APPLICATION_STEPS, stepPath } from "@/lib/constants";
 import { getNextAction } from "@/lib/flow";
 import { formatDate } from "@/lib/format";
+import { ENTRY_MODE_OPTIONS } from "@/types/enums";
 import styles from "./dashboard.module.css";
+
+function formatProgrammeLevel(level?: string): string {
+  if (!level) return "ND";
+  const up = level.toUpperCase();
+  if (up === "BSC" || up === "B.SC" || up === "DEGREE") return "B.Sc.";
+  if (up === "BENG" || up === "B.ENG") return "B.Eng.";
+  if (up === "ND") return "ND";
+  if (up === "CERT") return "Cert.";
+  return level;
+}
 
 function SummaryRow({
   label,
@@ -160,11 +171,34 @@ export default function DashboardPage() {
                 mono={!!application.applicationNumber}
               />
               <SummaryRow
+                label="Admission Track"
+                value={
+                  ENTRY_MODE_OPTIONS.find((m) => m.value === application.entryMode)?.badge ??
+                  application.entryMode ??
+                  "UTME (100L)"
+                }
+              />
+              <SummaryRow
                 label="Programme"
-                value={programme?.name ?? "Not selected"}
+                value={
+                  programme
+                    ? `${formatProgrammeLevel(programme.level)} ${programme.name}`
+                    : "Not selected"
+                }
               />
               <SummaryRow label="Department" value={department?.name ?? "—"} />
-              <SummaryRow label="Level" value={programme?.level ?? "—"} />
+              <SummaryRow
+                label="Award / Level"
+                value={
+                  programme?.level === "BSC"
+                    ? "B.Sc. Degree (AE-FUNAI)"
+                    : programme?.level === "BENG"
+                    ? "B.Eng. Degree (AE-FUNAI)"
+                    : programme?.level === "ND"
+                    ? "National Diploma (ND)"
+                    : programme?.level ?? "—"
+                }
+              />
               <SummaryRow
                 label="Status"
                 value={<AppStatusTag status={application.status} />}

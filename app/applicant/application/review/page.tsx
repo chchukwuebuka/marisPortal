@@ -16,6 +16,7 @@ import {
   MARITAL_STATUS_LABELS,
   stepPath,
 } from "@/lib/constants";
+import { ENTRY_MODE_OPTIONS } from "@/types/enums";
 import { formatDate } from "@/lib/format";
 import styles from "./review.module.css";
 
@@ -41,7 +42,29 @@ export default function ReviewStep() {
     .filter(Boolean)
     .join(" ");
   const programme = findProgramme(prog.programmeId);
-  const requirements = getRequirementsForProgramme(prog.programmeId);
+  const requirements = getRequirementsForProgramme(
+    prog.programmeId,
+    application.entryMode,
+  );
+
+  const isDegree =
+    programme?.level === "BSC" ||
+    programme?.level === "BENG" ||
+    programme?.level === "DEGREE";
+
+  const formattedProgLevel =
+    programme?.level === "BSC"
+      ? "B.Sc."
+      : programme?.level === "BENG"
+      ? "B.Eng."
+      : programme?.level === "ND"
+      ? "National Diploma (ND)"
+      : programme?.level;
+
+  const entryModeLabel =
+    ENTRY_MODE_OPTIONS.find((m) => m.value === application.entryMode)?.label ||
+    application.entryMode ||
+    "UTME (100 Level)";
 
   return (
     <StepPanel
@@ -116,6 +139,7 @@ export default function ReviewStep() {
           editHref={stepPath("programme")}
           complete={stepStatus.programme}
         >
+          <ReviewRow label="Admission track" value={entryModeLabel} />
           <ReviewRow
             label="Session"
             value={findSession(prog.sessionId)?.name}
@@ -131,10 +155,17 @@ export default function ReviewStep() {
           <ReviewRow
             label="Programme"
             value={
-              programme ? `${programme.level} — ${programme.name}` : undefined
+              programme ? `${formattedProgLevel} — ${programme.name}` : undefined
             }
             wide
           />
+          {isDegree && (
+            <ReviewRow
+              label="Academic affiliation"
+              value="Alex Ekwueme Federal University Ndufu-Alike (AE-FUNAI)"
+              wide
+            />
+          )}
         </ReviewSection>
 
         <ReviewSection
@@ -205,38 +236,63 @@ export default function ReviewStep() {
         </ReviewSection>
 
         <ReviewSection
-          title="JAMB Information"
+          title="JAMB / Examination Information"
           editHref={stepPath("jamb")}
           complete={stepStatus.jamb}
         >
-          <ReviewRow label="Registration number" value={j.registrationNumber} />
-          <ReviewRow label="Exam type" value={j.examType} />
-          <ReviewRow label="Exam year" value={j.examYear || undefined} />
-          <ReviewRow
-            label="Total score"
-            value={typeof j.score === "number" ? `${j.score} / 400` : undefined}
-          />
-          {j.subjects && j.subjects.length > 0 && (
+          {application.entryMode === "INTERNATIONAL" ? (
             <ReviewRow
-              label="UTME Subjects"
+              label="JAMB status"
+              value="Exempt (International Student Track — evaluated via foreign high school credentials)"
               wide
-              value={
-                <div className={styles.subjects}>
-                  {j.subjects.map((sub, i) => (
-                    <span key={sub.id || i} className={styles.subjectPill}>
-                      {sub.subject}
-                      <strong>{sub.score}</strong>
-                    </span>
-                  ))}
-                </div>
-              }
             />
+          ) : (
+            <>
+              <ReviewRow
+                label={
+                  application.entryMode === "DE" || application.entryMode === "JUPEB"
+                    ? "JAMB DE registration number"
+                    : application.entryMode === "TRANSFER"
+                    ? "Previous JAMB / matric number"
+                    : "JAMB registration number"
+                }
+                value={j.registrationNumber}
+              />
+              <ReviewRow label="Exam type" value={j.examType} />
+              <ReviewRow label="Exam year" value={j.examYear || undefined} />
+              {application.entryMode === "UTME" && (
+                <ReviewRow
+                  label="Total score"
+                  value={
+                    typeof j.score === "number" ? `${j.score} / 400` : undefined
+                  }
+                />
+              )}
+              {application.entryMode === "UTME" &&
+                j.subjects &&
+                j.subjects.length > 0 && (
+                  <ReviewRow
+                    label="UTME Subjects"
+                    wide
+                    value={
+                      <div className={styles.subjects}>
+                        {j.subjects.map((sub, i) => (
+                          <span key={sub.id || i} className={styles.subjectPill}>
+                            {sub.subject}
+                            <strong>{sub.score}</strong>
+                          </span>
+                        ))}
+                      </div>
+                    }
+                  />
+                )}
+              <ReviewRow
+                label="First choice institution"
+                value={j.firstChoiceInstitution}
+              />
+              <ReviewRow label="Course applied" value={j.courseApplied} />
+            </>
           )}
-          <ReviewRow
-            label="First choice institution"
-            value={j.firstChoiceInstitution}
-          />
-          <ReviewRow label="Course applied" value={j.courseApplied} />
         </ReviewSection>
 
         <ReviewSection

@@ -32,7 +32,10 @@ export default function SubmitStep() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const requirements = getRequirementsForProgramme(application.programme?.programmeId);
+  const requirements = getRequirementsForProgramme(
+    application.programme?.programmeId,
+    application.entryMode,
+  );
 
   const submitted =
     Boolean(application.applicationNumber) &&
@@ -66,7 +69,14 @@ export default function SubmitStep() {
       href: stepPath("olevel"),
     },
     {
-      label: "JAMB information",
+      label:
+        application.entryMode === "INTERNATIONAL"
+          ? "JAMB exemption (International Student)"
+          : application.entryMode === "DE" || application.entryMode === "JUPEB"
+          ? "Direct Entry registration details"
+          : application.entryMode === "TRANSFER"
+          ? "Transfer registration details"
+          : "JAMB information",
       ok: isJambComplete(application),
       href: stepPath("jamb"),
     },

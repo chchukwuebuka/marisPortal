@@ -46,7 +46,10 @@ export interface CatalogueContextValue {
   /* --- document requirements (set per-application by ApplicationProvider) --- */
   requirements: DocumentRequirement[];
   setRequirements: (reqs: DocumentRequirement[]) => void;
-  getRequirementsForProgramme: (programmeId?: string | null) => DocumentRequirement[];
+  getRequirementsForProgramme: (
+    programmeId?: string | null,
+    entryMode?: string | null,
+  ) => DocumentRequirement[];
 }
 
 const FALLBACK_SESSION: AcademicSession = {
@@ -240,11 +243,12 @@ export function CatalogueProvider({
   );
 
   const getRequirementsForProgramme = useCallback(
-    (programmeId?: string | null) =>
+    (programmeId?: string | null, entryMode?: string | null) =>
       requirements.filter(
         (r) =>
           r.active &&
-          (r.programmeId == null || r.programmeId === programmeId),
+          (r.programmeId == null || r.programmeId === programmeId) &&
+          (!entryMode || !r.entryMode || r.entryMode === entryMode),
       ),
     [requirements],
   );

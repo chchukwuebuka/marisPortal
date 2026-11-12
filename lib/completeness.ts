@@ -52,8 +52,19 @@ export function isOlevelComplete(a: Application): boolean {
 }
 
 export function isJambComplete(a: Application): boolean {
+  if (a.entryMode === "INTERNATIONAL") {
+    return true;
+  }
   const j = a.jamb ?? {};
-  if (!j.registrationNumber || !j.examYear || !j.examType) return false;
+  if (!j.registrationNumber || !j.examYear) return false;
+  if (
+    a.entryMode === "DE" ||
+    a.entryMode === "JUPEB" ||
+    a.entryMode === "TRANSFER" ||
+    j.examType === "Direct Entry"
+  ) {
+    return true;
+  }
   if (Array.isArray(j.subjects) && j.subjects.length === 4) {
     const subjects = j.subjects.map((s) => s.subject?.trim().toLowerCase() || "");
     const hasEnglish = subjects.some(

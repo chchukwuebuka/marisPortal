@@ -275,6 +275,7 @@ export interface ApiApplicationDetail {
   application_number: string | null;
   status: ApiApplicationStatus;
   status_display: string;
+  entry_mode?: string;
   is_editable: boolean;
   session: number;
   session_name: string;
@@ -313,6 +314,7 @@ export interface ApiDocumentRequirement {
   allowed_extensions: string[];
   max_file_size: number; // bytes
   programme: number | null;
+  entry_mode?: string;
   active: boolean;
   order: number;
 }

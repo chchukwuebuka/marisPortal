@@ -45,11 +45,11 @@ export function getApplication(id: number): Promise<ApiApplicationDetail> {
   return api.get<ApiApplicationDetail>(`${base(id)}/`);
 }
 
-/** PATCH /applications/{id}/ — only the programme selection is writable here. */
+/** PATCH /applications/{id}/ — update programme selection and entry mode. */
 export function updateApplicationProgramme(
   id: number,
-  data: { session?: number; programme?: number },
-): Promise<{ session: number; programme: number | null }> {
+  data: { session?: number; programme?: number; entry_mode?: string },
+): Promise<{ session: number; programme: number | null; entry_mode?: string }> {
   return api.patch(`${base(id)}/`, data);
 }
 

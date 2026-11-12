@@ -89,8 +89,15 @@ const coerceExamType = (v: string): ExamType =>
 const coerceGrade = (v: string): OLevelGrade =>
   inList(OLEVEL_GRADES, v) ? (v as OLevelGrade) : "F9";
 
-const levelFromType = (t: ApiProgrammeType): ProgrammeLevel =>
-  inList(PROGRAMME_LEVELS, t) ? (t as ProgrammeLevel) : "ND";
+const levelFromType = (t: string): ProgrammeLevel => {
+  if (!t) return "ND";
+  const up = String(t).toUpperCase().trim();
+  if (up === "BSC" || up === "B.SC" || up === "B.SC.") return "BSC";
+  if (up === "BENG" || up === "B.ENG" || up === "B.ENG.") return "BENG";
+  if (up === "DEGREE") return "DEGREE";
+  if (up === "CERT") return "CERT";
+  return "ND";
+};
 
 /* ---- Profile ↔ Personal + Contact ---------------------------- */
 // One API profile backs the app's separate "personal" and "contact" sections.
@@ -219,8 +226,8 @@ export function toDomainProgramme(p: any): Programme {
       ? p.is_open
       : true;
 
-  const rawLevel = p.programme_type || p.level || "ND";
-  const level = levelFromType(rawLevel as ApiProgrammeType);
+  const rawLevel = p.programme_type || p.type || p.level || "ND";
+  const level = levelFromType(rawLevel);
 
   return {
     id: idToStr(p.id),
@@ -381,6 +388,7 @@ export function toDomainRequirement(r: any): DocumentRequirement {
     ),
     maxFileSizeMb: maxMb,
     programmeId: progId,
+    entryMode: requirement.entry_mode || null,
     active: isActive,
   };
 }

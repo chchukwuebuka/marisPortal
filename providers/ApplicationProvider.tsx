@@ -33,6 +33,7 @@ import type {
   ProgrammeSelection,
 } from "@/types/domain";
 import type { StepKey } from "@/lib/constants";
+import type { EntryMode } from "@/types/enums";
 import {
   computeStepStatus,
   progressPercent,
@@ -232,7 +233,9 @@ export function ApplicationProvider({
           departmentId: detail.programme_detail?.department != null
             ? String(detail.programme_detail.department)
             : undefined,
+          entryMode: (detail.entry_mode as EntryMode) || "UTME",
         },
+        entryMode: (detail.entry_mode as EntryMode) || "UTME",
         education: detail.education.map(toDomainEducation),
         olevel: detail.olevel_results.map(toDomainOlevel),
         presentingTwoSittings: detail.olevel_results.length > 1,
@@ -357,13 +360,22 @@ export function ApplicationProvider({
       if (data.sessionId != null) apiData.session = toApiId(data.sessionId);
       if (data.programmeId != null)
         apiData.programme = toApiId(data.programmeId);
-      await appApi.updateApplicationProgramme(apiAppId, apiData as { session?: number; programme?: number });
+      if (data.entryMode != null)
+        apiData.entry_mode = data.entryMode;
+      await appApi.updateApplicationProgramme(apiAppId, apiData as any);
+      try {
+        const reqsBundle = await getRequirements(apiAppId);
+        setRequirements(reqsBundle.requirements);
+      } catch {
+        // non-fatal
+      }
       touch((prev) => ({
         ...prev,
+        entryMode: data.entryMode || prev.entryMode,
         programme: { ...prev.programme, ...data },
       }));
     },
-    [apiAppId, touch],
+    [apiAppId, touch, setRequirements],
   );
 
   const addEducation = useCallback(
@@ -541,7 +553,10 @@ export function ApplicationProvider({
   const paid = payment?.status === "successful";
 
   const submitApplication = useCallback(async () => {
-    const reqs = getRequirementsForProgramme(application.programme?.programmeId);
+    const reqs = getRequirementsForProgramme(
+      application.programme?.programmeId,
+      application.entryMode,
+    );
     const errors = validateForSubmission(application, paid, reqs);
     if (errors.length > 0) return { ok: false, errors };
 
@@ -615,7 +630,10 @@ export function ApplicationProvider({
   /* ------------------------------------------------------------------ *
    *  Completeness                                                       *
    * ------------------------------------------------------------------ */
-  const reqs = getRequirementsForProgramme(application.programme?.programmeId);
+  const reqs = getRequirementsForProgramme(
+    application.programme?.programmeId,
+    application.entryMode,
+  );
 
   const stepStatus = useMemo(
     () => computeStepStatus(application, reqs),
