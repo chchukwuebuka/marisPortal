@@ -107,7 +107,7 @@ export interface ApiDepartment {
   is_active: boolean;
 }
 
-export type ApiProgrammeType = "ND" | "HND" | "CERT";
+export type ApiProgrammeType = "ND" | "CERT";
 
 export interface ApiProgramme {
   id: number;

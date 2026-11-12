@@ -24,7 +24,7 @@ export interface ApiProgramme {
   id: number;
   offering_id?: number;
   name: string;
-  type?: string; // 'ND' | 'HND' | 'BSC' | 'BENG'
+  type?: string; // 'ND' | 'BSC' | 'BENG'
   option?: string | null; // e.g. "Cybersecurity Option"
   duration_years?: number;
   cutoff_mark?: number | null;

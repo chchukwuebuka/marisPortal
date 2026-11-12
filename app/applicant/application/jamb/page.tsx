@@ -77,6 +77,7 @@ export default function JambStep() {
   });
 
   const watchedSubjects = useWatch({ control, name: "subjects" });
+  const watchedExamType = useWatch({ control, name: "examType" });
   const [liveScores, setLiveScores] = useState<Record<number, number | "">>({});
 
   const resolvedScores: Array<number | ""> = [0, 1, 2, 3].map((idx) => {
@@ -101,6 +102,7 @@ export default function JambStep() {
 
   // Live cut-off evaluation while typing (without waiting for Save & continue)
   const liveCutoffWarning = useMemo<CutoffRejectionState | null>(() => {
+    if (watchedExamType === "Direct Entry") return null;
     if (cutoffRejection) return cutoffRejection;
     const requiredCutoff = chosenProgramme?.cutoffMark;
     if (requiredCutoff == null || enteredScoresCount < 4) return null;
@@ -142,6 +144,16 @@ export default function JambStep() {
     setCutoffRejection(null);
 
     try {
+      if (values.examType === "Direct Entry") {
+        await updateJamb({
+          ...values,
+          subjects: [],
+          score: undefined,
+        });
+        router.push(nav.nextHref);
+        return;
+      }
+
       // 1. Save JAMB record (backend calculates and stores aggregate score)
       await updateJamb({
         ...values,
@@ -436,14 +448,37 @@ export default function JambStep() {
 
         <hr className={form.divider} style={{ margin: "24px 0" }} />
 
-        {/* 4 UTME Subjects Table */}
-        <div style={{ marginBottom: "20px" }}>
-          <div style={{ marginBottom: "12px" }}>
-            <h3 className={form.sectionTitle}>UTME Subject Breakdown</h3>
-            <p className={form.sectionSub}>
-              Enter your 4 UTME subjects and the score for each (0–100). Use of English is compulsory.
+        {/* Direct Entry Notice OR 4 UTME Subjects Table */}
+        {watchedExamType === "Direct Entry" ? (
+          <div
+            style={{
+              background: "#eff6ff",
+              border: "1px solid #bfdbfe",
+              borderRadius: "8px",
+              padding: "20px",
+              marginBottom: "24px",
+            }}
+          >
+            <h4 style={{ color: "#1e40af", fontSize: "16px", fontWeight: 700, margin: "0 0 8px 0" }}>
+              Direct Entry (200 Level Admission Track)
+            </h4>
+            <p style={{ color: "#1e3a8a", fontSize: "14px", lineHeight: 1.6, margin: "0 0 12px 0" }}>
+              As a Direct Entry applicant into the Degree Programme, your admission is evaluated based on your
+              qualifying tertiary credential (National Diploma, NCE, IJMB, JUPEB, or A-Levels) along with your
+              5 O&apos;Level credit passes.
+            </p>
+            <p style={{ color: "#1e40af", fontSize: "13px", margin: 0, fontWeight: 600 }}>
+              ✓ You do not need to enter 4 UTME subject test scores. Please verify your prior tertiary institution and qualification details in the Educational Background step.
             </p>
           </div>
+        ) : (
+          <div style={{ marginBottom: "20px" }}>
+            <div style={{ marginBottom: "12px" }}>
+              <h3 className={form.sectionTitle}>UTME Subject Breakdown</h3>
+              <p className={form.sectionSub}>
+                Enter your 4 UTME subjects and the score for each (0–100). Use of English is compulsory.
+              </p>
+            </div>
 
           {errors.subjects?.message && (
             <div
@@ -701,6 +736,7 @@ export default function JambStep() {
             </div>
           </div>
         </div>
+        )}
       </StepPanel>
     </form>
   );

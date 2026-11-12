@@ -55,12 +55,12 @@
 //   { id: "dep-sta", schoolId: "sch-science", name: "Statistics", code: "STA" },
 // ];
 
-// /** Programmes are generated ND + HND per department (kept DRY). */
+// /** Programmes are generated ND per department (kept DRY). */
 // export const PROGRAMMES: Programme[] = DEPARTMENTS.flatMap((dept) => {
-//   const levels: ProgrammeLevel[] = ["ND", "HND"];
+//   const levels: ProgrammeLevel[] = ["ND"];
 //   return levels.map((level) => {
 //     // One programme is intentionally closed, to exercise the validation.
-//     const acceptingApplications = !(dept.id === "dep-civ" && level === "HND");
+//     const acceptingApplications = !(dept.id === "dep-civ");
 //     return {
 //       id: `prog-${level.toLowerCase()}-${dept.code.toLowerCase()}`,
 //       departmentId: dept.id,

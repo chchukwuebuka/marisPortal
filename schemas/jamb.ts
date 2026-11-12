@@ -29,36 +29,42 @@ export const jambSchema = z
       .trim()
       .min(1, "First choice institution is required"),
     courseApplied: z.string().trim().min(1, "Course applied for is required"),
-    subjects: z
-      .array(jambSubjectScoreSchema)
-      .length(4, "Exactly 4 UTME subjects are required"),
+    subjects: z.array(jambSubjectScoreSchema).optional().default([]),
     score: z.number().optional(),
   })
-  .refine(
-    (data) => {
+  .superRefine((data, ctx) => {
+    if (data.examType === "UTME") {
+      if (!data.subjects || data.subjects.length !== 4) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Exactly 4 UTME subjects are required.",
+          path: ["subjects"],
+        });
+        return;
+      }
       const subjects = data.subjects.map((s) => s.subject.trim().toLowerCase());
-      return subjects.some(
+      const hasEnglish = subjects.some(
         (s) =>
           s === "use of english" ||
           s === "english" ||
           s === "english language",
       );
-    },
-    {
-      message: "Use of English is compulsory.",
-      path: ["subjects"],
-    },
-  )
-  .refine(
-    (data) => {
-      const subjects = data.subjects.map((s) => s.subject.trim().toLowerCase());
-      return new Set(subjects).size === data.subjects.length;
-    },
-    {
-      message: "Duplicate subjects are not allowed.",
-      path: ["subjects"],
-    },
-  );
+      if (!hasEnglish) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Use of English is compulsory.",
+          path: ["subjects"],
+        });
+      }
+      if (new Set(subjects).size !== data.subjects.length) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Duplicate subjects are not allowed.",
+          path: ["subjects"],
+        });
+      }
+    }
+  });
 
 export type JambSubjectInput = z.input<typeof jambSubjectScoreSchema>;
 export type JambSubjectFormValues = z.output<typeof jambSubjectScoreSchema>;

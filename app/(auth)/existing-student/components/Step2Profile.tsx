@@ -71,7 +71,6 @@ export function Step2Profile({
     activeProg?.type === "BENG" ||
     activeProg?.type === "DEGREE" ||
     activeProg?.type === "DIRECT_ENTRY";
-  const isHndProgramme = activeProg?.type === "HND";
   const isNdProgramme = activeProg?.type === "ND";
 
   const levelSelectOptions = [
@@ -80,7 +79,6 @@ export function Step2Profile({
       .filter((lvl) => {
         const num = lvl.numeric_value || parseInt(lvl.code, 10) || lvl.id;
         if (isNdProgramme) return num === 100 || num === 200 || lvl.id === 1 || lvl.id === 2;
-        if (isHndProgramme) return num === 300 || num === 400 || lvl.id === 3 || lvl.id === 4;
         return true;
       })
       .map((lvl) => {
@@ -105,23 +103,15 @@ export function Step2Profile({
           else if (num === 200 || lvl.code === "200" || lvl.id === 2)
             formattedLabel = `ND II (${lvl.name})`;
           else formattedLabel = `ND - ${lvl.name}`;
-        } else if (isHndProgramme) {
-          if (num === 300 || lvl.code === "300" || lvl.id === 3)
-            formattedLabel = `HND I (${lvl.name})`;
-          else if (num === 400 || lvl.code === "400" || lvl.id === 4)
-            formattedLabel = `HND II (${lvl.name})`;
-          else formattedLabel = `HND - ${lvl.name}`;
         } else {
           if (num === 100 || lvl.code === "100" || lvl.id === 1)
             formattedLabel = `ND I / ${lvl.name}`;
           else if (num === 200 || lvl.code === "200" || lvl.id === 2)
             formattedLabel = `ND II / ${lvl.name}`;
-          else if (num === 300 || lvl.code === "300" || lvl.id === 3)
-            formattedLabel = `HND I / ${lvl.name}`;
-          else if (num === 400 || lvl.code === "400" || lvl.id === 4)
-            formattedLabel = `HND II / ${lvl.name}`;
           else if (num === 500 || lvl.code === "500" || lvl.id === 5)
             formattedLabel = `${lvl.name} (B.Sc / B.Eng Final Year)`;
+          else
+            formattedLabel = `${lvl.name}`;
         }
 
         return {
@@ -252,8 +242,6 @@ export function Step2Profile({
                       lvlObj?.id ||
                       0;
                     if (prog.type === "ND" && (lvlNum > 200 || updatedLevel > 2)) {
-                      updatedLevel = undefined;
-                    } else if (prog.type === "HND" && (lvlNum < 300 || lvlNum > 400)) {
                       updatedLevel = undefined;
                     }
                   }

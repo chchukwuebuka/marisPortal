@@ -14,7 +14,7 @@ import { checkAdmissionStatus } from "@/services/catalogue";
 import styles from "./auth.module.css";
 
 const OPEN_FEATURES = [
-  { icon: GraduationCap, label: "Apply to ND & HND programmes" },
+  { icon: GraduationCap, label: "Apply to National Diploma (ND) programmes" },
   { icon: UploadCloud, label: "Upload your documents once" },
   { icon: ClipboardCheck, label: "Track your admission in real time" },
 ];

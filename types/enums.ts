@@ -54,8 +54,8 @@ export const MARITAL_STATUSES = [
 ] as const;
 export type MaritalStatus = (typeof MARITAL_STATUSES)[number];
 
-// Mirrors the API's programme types (ND / HND / Certificate).
-export const PROGRAMME_LEVELS = ["ND", "HND", "CERT"] as const;
+// Mirrors the API's programme types (ND / Certificate).
+export const PROGRAMME_LEVELS = ["ND", "CERT"] as const;
 export type ProgrammeLevel = (typeof PROGRAMME_LEVELS)[number];
 
 export const JAMB_EXAM_TYPES = ["UTME", "Direct Entry"] as const;

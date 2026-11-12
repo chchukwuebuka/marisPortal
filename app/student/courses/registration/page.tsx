@@ -86,8 +86,8 @@ export default function CourseRegistrationPage() {
     .reduce((sum, c) => sum + (c.creditUnits || 0), 0);
 
   const totalCredits = compulsoryCredits + electiveCredits;
-  const minCredits = availableData?.minCredits ?? 12;
-  const maxCredits = availableData?.maxCredits ?? 24;
+  const minCredits = availableData?.minCredits ?? 10;
+  const maxCredits = availableData?.maxCredits ?? 40;
 
   const isBelowMin = totalCredits < minCredits;
   const isAboveMax = totalCredits > maxCredits;
