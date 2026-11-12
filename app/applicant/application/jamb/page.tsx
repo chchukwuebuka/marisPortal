@@ -26,7 +26,10 @@ interface CutoffRejectionState {
   requiredCutoff: number;
   studentScore: number;
   message: string;
+  isDegreeProgramme: boolean;
   suggestions: ApiCutoffCheckSuggestion[];
+  degreeSuggestions: ApiCutoffCheckSuggestion[];
+  ndSuggestions: ApiCutoffCheckSuggestion[];
 }
 
 export default function JambStep() {
@@ -39,6 +42,7 @@ export default function JambStep() {
   const [cutoffRejection, setCutoffRejection] = useState<CutoffRejectionState | null>(null);
   const [switchingProgId, setSwitchingProgId] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [showNdAdvisory, setShowNdAdvisory] = useState<boolean>(false);
 
   const chosenProgramme = useMemo(() => {
     return findProgramme(application.programme?.programmeId);
@@ -114,6 +118,11 @@ export default function JambStep() {
 
   const enteredScoresCount = resolvedScores.filter((s) => typeof s === "number").length;
 
+  const isChosenDegree =
+    chosenProgramme?.level === "BSC" ||
+    chosenProgramme?.level === "BENG" ||
+    chosenProgramme?.level === "DEGREE";
+
   // Live cut-off evaluation while typing (without waiting for Save & continue)
   const liveCutoffWarning = useMemo<CutoffRejectionState | null>(() => {
     if (watchedExamType === "Direct Entry") return null;
@@ -123,13 +132,20 @@ export default function JambStep() {
     if (totalScore >= requiredCutoff) return null;
 
     const allProgs = listProgrammes();
-    const suggestions: ApiCutoffCheckSuggestion[] = allProgs
-      .filter(
-        (p) =>
-          p.id !== chosenProgramme?.id &&
-          p.cutoffMark != null &&
-          p.cutoffMark <= totalScore
-      )
+    const isDegreeProg = (lvl?: string) => {
+      const up = (lvl || "").toUpperCase();
+      return up === "BSC" || up === "BENG" || up === "DEGREE";
+    };
+
+    const qualifying = allProgs.filter(
+      (p) =>
+        p.id !== chosenProgramme?.id &&
+        p.cutoffMark != null &&
+        p.cutoffMark <= totalScore
+    );
+
+    const degreeSuggestions: ApiCutoffCheckSuggestion[] = qualifying
+      .filter((p) => isDegreeProg(p.level))
       .map((p) => ({
         id: Number(p.id),
         name: p.name,
@@ -138,12 +154,29 @@ export default function JambStep() {
         cutoff_mark: p.cutoffMark ?? 0,
       }));
 
+    const ndSuggestions: ApiCutoffCheckSuggestion[] = qualifying
+      .filter((p) => !isDegreeProg(p.level))
+      .map((p) => ({
+        id: Number(p.id),
+        name: p.name,
+        code: p.code,
+        programme_type: p.level,
+        cutoff_mark: p.cutoffMark ?? 0,
+      }));
+
+    const suggestions = isChosenDegree
+      ? [...degreeSuggestions, ...ndSuggestions]
+      : [...ndSuggestions, ...degreeSuggestions];
+
     return {
       programmeName: `${chosenProgramme?.level || ""} ${chosenProgramme?.name || ""}`.trim(),
       requiredCutoff,
       studentScore: totalScore,
       message: `Your JAMB score of ${totalScore} does not meet the minimum cut-off mark of ${requiredCutoff} required for ${chosenProgramme?.level || ""} ${chosenProgramme?.name || ""}.`,
+      isDegreeProgramme: isChosenDegree,
       suggestions,
+      degreeSuggestions,
+      ndSuggestions,
     };
   }, [
     cutoffRejection,
@@ -151,6 +184,8 @@ export default function JambStep() {
     enteredScoresCount,
     totalScore,
     listProgrammes,
+    isChosenDegree,
+    watchedExamType,
   ]);
 
   async function onSubmit(values: JambFormValues) {
@@ -181,12 +216,30 @@ export default function JambStep() {
       try {
         const check = await checkCutoff(application.id);
         if (!check.eligible) {
+          const isDeg = check.is_degree_programme ?? isChosenDegree;
+          const allSuggestions = check.suggestions || [];
+          const isDegreeProg = (t?: string) => {
+            const up = (t || "").toUpperCase();
+            return up === "BSC" || up === "BENG" || up === "DEGREE";
+          };
+          const degSugg =
+            check.degree_suggestions ||
+            allSuggestions.filter((s) => isDegreeProg(s.programme_type));
+          const ndSugg =
+            check.nd_suggestions ||
+            allSuggestions.filter((s) => !isDegreeProg(s.programme_type));
+
           setCutoffRejection({
-            programmeName: check.programme_name || `${chosenProgramme?.level || ""} ${chosenProgramme?.name || ""}`,
+            programmeName:
+              check.programme_name ||
+              `${chosenProgramme?.level || ""} ${chosenProgramme?.name || ""}`,
             requiredCutoff: check.cutoff_mark,
             studentScore: check.student_score || totalScore,
             message: check.message,
-            suggestions: check.suggestions || [],
+            isDegreeProgramme: isDeg,
+            suggestions: allSuggestions,
+            degreeSuggestions: degSugg,
+            ndSuggestions: ndSugg,
           });
           return;
         }
@@ -195,12 +248,45 @@ export default function JambStep() {
         // Fallback local cut-off check if endpoint call fails
         const requiredCutoff = chosenProgramme?.cutoffMark;
         if (requiredCutoff != null && totalScore < requiredCutoff) {
+          const allProgs = listProgrammes();
+          const isDegreeProg = (lvl?: string) => {
+            const up = (lvl || "").toUpperCase();
+            return up === "BSC" || up === "BENG" || up === "DEGREE";
+          };
+          const qualifying = allProgs.filter(
+            (p) =>
+              p.id !== chosenProgramme?.id &&
+              p.cutoffMark != null &&
+              p.cutoffMark <= totalScore
+          );
+          const degSugg = qualifying
+            .filter((p) => isDegreeProg(p.level))
+            .map((p) => ({
+              id: Number(p.id),
+              name: p.name,
+              code: p.code,
+              programme_type: p.level,
+              cutoff_mark: p.cutoffMark ?? 0,
+            }));
+          const ndSugg = qualifying
+            .filter((p) => !isDegreeProg(p.level))
+            .map((p) => ({
+              id: Number(p.id),
+              name: p.name,
+              code: p.code,
+              programme_type: p.level,
+              cutoff_mark: p.cutoffMark ?? 0,
+            }));
+
           setCutoffRejection({
             programmeName: `${chosenProgramme?.level || ""} ${chosenProgramme?.name || ""}`,
             requiredCutoff,
             studentScore: totalScore,
             message: `Your JAMB score of ${totalScore} does not meet the cut-off mark of ${requiredCutoff} for ${chosenProgramme?.name}.`,
-            suggestions: [],
+            isDegreeProgramme: isChosenDegree,
+            suggestions: isChosenDegree ? [...degSugg, ...ndSugg] : [...ndSugg, ...degSugg],
+            degreeSuggestions: degSugg,
+            ndSuggestions: ndSugg,
           });
           return;
         }
@@ -282,61 +368,239 @@ export default function JambStep() {
                   )}
                 </p>
 
-                {liveCutoffWarning.suggestions.length > 0 ? (
+                {/* 1. If Degree applicant: show Degree options FIRST */}
+                {liveCutoffWarning.isDegreeProgramme ? (
                   <>
-                    <p style={{ margin: "0 0 10px 0", color: "#1e3a8a", fontSize: "13px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                      Suggested Programmes Matching Your Score:
-                    </p>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "16px" }}>
-                      {liveCutoffWarning.suggestions.map((prog) => {
-                        const localProg = findProgramme(String(prog.id));
-                        const dept = localProg ? findDepartment(localProg.departmentId) : null;
-                        return (
-                          <div
-                            key={prog.id}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                              flexWrap: "wrap",
-                              gap: "8px",
-                              background: "#ffffff",
-                              border: "1px solid #e5e7eb",
-                              borderRadius: "6px",
-                              padding: "10px 14px",
-                            }}
-                          >
-                            <div>
-                              <div style={{ fontWeight: 600, fontSize: "14px", color: "#111827" }}>
-                                {prog.programme_type ? `${prog.programme_type} ` : ""}{prog.name}
-                              </div>
-                              <div style={{ fontSize: "12px", color: "#6b7280" }}>
-                                {dept?.name ? `${dept.name} • ` : ""}
-                                <span style={{ color: "#2563eb", fontWeight: 600 }}>
-                                  Cut-Off: {prog.cutoff_mark}
-                                </span>
-                              </div>
-                            </div>
+                    {liveCutoffWarning.degreeSuggestions.length > 0 ? (
+                      <div style={{ marginBottom: "16px" }}>
+                        <p style={{ margin: "0 0 10px 0", color: "#1e3a8a", fontSize: "13px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                          Degree Programmes Matching Your Score (AE-FUNAI Affiliation):
+                        </p>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                          {liveCutoffWarning.degreeSuggestions.map((prog) => {
+                            const localProg = findProgramme(String(prog.id));
+                            const dept = localProg ? findDepartment(localProg.departmentId) : null;
+                            return (
+                              <div
+                                key={prog.id}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                  flexWrap: "wrap",
+                                  gap: "8px",
+                                  background: "#ffffff",
+                                  border: "1px solid #e5e7eb",
+                                  borderRadius: "6px",
+                                  padding: "10px 14px",
+                                }}
+                              >
+                                <div>
+                                  <div style={{ fontWeight: 600, fontSize: "14px", color: "#111827" }}>
+                                    {prog.programme_type ? `${prog.programme_type} ` : ""}{prog.name}
+                                  </div>
+                                  <div style={{ fontSize: "12px", color: "#6b7280" }}>
+                                    {dept?.name ? `${dept.name} • ` : ""}
+                                    <span style={{ color: "#2563eb", fontWeight: 600 }}>
+                                      Cut-Off: {prog.cutoff_mark}
+                                    </span>
+                                  </div>
+                                </div>
 
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => handleSwitchAndContinue(prog)}
-                              disabled={Boolean(switchingProgId)}
-                              rightIcon={<ArrowRight size={14} />}
-                            >
-                              {switchingProgId === String(prog.id) ? "Switching..." : "Switch & Continue"}
-                            </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => handleSwitchAndContinue(prog)}
+                                  disabled={Boolean(switchingProgId)}
+                                  rightIcon={<ArrowRight size={14} />}
+                                >
+                                  {switchingProgId === String(prog.id) ? "Switching..." : "Switch to Degree & Continue"}
+                                </Button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          padding: "12px 14px",
+                          background: "#fffbeb",
+                          border: "1px solid #fef3c7",
+                          borderRadius: "6px",
+                          marginBottom: "16px",
+                          color: "#92400e",
+                          fontSize: "13px",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        <strong>No alternative degree programmes match your score of {liveCutoffWarning.studentScore}.</strong>
+                        <div style={{ marginTop: "4px" }}>
+                          All degree programmes in affiliation with AE-FUNAI require a minimum JAMB cut-off of 140.
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ND Programme Advisory for Degree Candidates */}
+                    {liveCutoffWarning.ndSuggestions.length > 0 && (
+                      <div
+                        style={{
+                          background: "#eff6ff",
+                          border: "1.5px dashed #3b82f6",
+                          borderRadius: "8px",
+                          padding: "16px",
+                          marginBottom: "16px",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "10px" }}>
+                          <span style={{ fontSize: "20px" }}>💡</span>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: "14px", color: "#1e40af" }}>
+                              {liveCutoffWarning.degreeSuggestions.length === 0
+                                ? "Would you like to switch to a National Diploma (ND) programme?"
+                                : "Considering a National Diploma (ND) alternative?"}
+                            </div>
+                            <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#334155", lineHeight: 1.5 }}>
+                              Marist Polytechnic offers accredited 2-year National Diploma (ND) programmes that you qualify for with your score of <strong>{liveCutoffWarning.studentScore}</strong>. Upon completing your ND, you can also proceed into 200 Level Degree via Direct Entry!
+                            </p>
                           </div>
-                        );
-                      })}
-                    </div>
+                        </div>
+
+                        {!showNdAdvisory ? (
+                          <Button
+                            type="button"
+                            variant="primary"
+                            size="sm"
+                            onClick={() => setShowNdAdvisory(true)}
+                          >
+                            Yes, Show ND Programmes for My Score ({liveCutoffWarning.ndSuggestions.length} Available)
+                          </Button>
+                        ) : (
+                          <div style={{ marginTop: "12px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                              <p style={{ margin: 0, fontSize: "13px", fontWeight: 700, color: "#1e40af", textTransform: "uppercase" }}>
+                                Eligible National Diploma (ND) Programmes:
+                              </p>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setShowNdAdvisory(false)}
+                              >
+                                Hide ND Options
+                              </Button>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                              {liveCutoffWarning.ndSuggestions.map((prog) => {
+                                const localProg = findProgramme(String(prog.id));
+                                const dept = localProg ? findDepartment(localProg.departmentId) : null;
+                                return (
+                                  <div
+                                    key={prog.id}
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "space-between",
+                                      flexWrap: "wrap",
+                                      gap: "8px",
+                                      background: "#ffffff",
+                                      border: "1px solid #bfdbfe",
+                                      borderRadius: "6px",
+                                      padding: "10px 14px",
+                                    }}
+                                  >
+                                    <div>
+                                      <div style={{ fontWeight: 600, fontSize: "14px", color: "#111827" }}>
+                                        {prog.name.startsWith("ND") ? prog.name : `ND ${prog.name}`}
+                                      </div>
+                                      <div style={{ fontSize: "12px", color: "#6b7280" }}>
+                                        {dept?.name ? `${dept.name} • ` : ""}
+                                        <span style={{ color: "#15803d", fontWeight: 600 }}>
+                                          Cut-Off: {prog.cutoff_mark}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="primary"
+                                      onClick={() => handleSwitchAndContinue(prog)}
+                                      disabled={Boolean(switchingProgId)}
+                                      rightIcon={<ArrowRight size={14} />}
+                                    >
+                                      {switchingProgId === String(prog.id) ? "Switching..." : "Switch to ND & Continue"}
+                                    </Button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </>
                 ) : (
-                  <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "14px" }}>
-                    No alternative programmes currently found matching your score. Please review your scores or contact the admissions office.
-                  </p>
+                  /* 2. If ND applicant: show ND options directly */
+                  <>
+                    {liveCutoffWarning.ndSuggestions.length > 0 ? (
+                      <>
+                        <p style={{ margin: "0 0 10px 0", color: "#1e3a8a", fontSize: "13px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                          Suggested National Diploma (ND) Programmes:
+                        </p>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "16px" }}>
+                          {liveCutoffWarning.ndSuggestions.map((prog) => {
+                            const localProg = findProgramme(String(prog.id));
+                            const dept = localProg ? findDepartment(localProg.departmentId) : null;
+                            return (
+                              <div
+                                key={prog.id}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                  flexWrap: "wrap",
+                                  gap: "8px",
+                                  background: "#ffffff",
+                                  border: "1px solid #e5e7eb",
+                                  borderRadius: "6px",
+                                  padding: "10px 14px",
+                                }}
+                              >
+                                <div>
+                                  <div style={{ fontWeight: 600, fontSize: "14px", color: "#111827" }}>
+                                    {prog.name.startsWith("ND") ? prog.name : `ND ${prog.name}`}
+                                  </div>
+                                  <div style={{ fontSize: "12px", color: "#6b7280" }}>
+                                    {dept?.name ? `${dept.name} • ` : ""}
+                                    <span style={{ color: "#2563eb", fontWeight: 600 }}>
+                                      Cut-Off: {prog.cutoff_mark}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => handleSwitchAndContinue(prog)}
+                                  disabled={Boolean(switchingProgId)}
+                                  rightIcon={<ArrowRight size={14} />}
+                                >
+                                  {switchingProgId === String(prog.id) ? "Switching..." : "Switch & Continue"}
+                                </Button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    ) : (
+                      <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "14px" }}>
+                        No alternative programmes currently found matching your score. Please review your scores or contact the admissions office.
+                      </p>
+                    )}
+                  </>
                 )}
 
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>

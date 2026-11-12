@@ -230,7 +230,10 @@ export interface ApiCutoffCheckResponse {
   student_score: number;
   programme_name: string;
   message: string;
+  is_degree_programme?: boolean;
   suggestions: ApiCutoffCheckSuggestion[];
+  degree_suggestions?: ApiCutoffCheckSuggestion[];
+  nd_suggestions?: ApiCutoffCheckSuggestion[];
 }
 
 export interface ApiStatusHistory {
