@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useApplication } from "@/hooks/useApplication";
 import { useCatalogue } from "@/hooks/useCatalogue";
@@ -15,10 +16,19 @@ export default function DocumentsStep() {
   const { getRequirementsForProgramme } = useCatalogue();
   const nav = stepNav("documents");
 
-  const requirements = getRequirementsForProgramme(
+  const rawRequirements = getRequirementsForProgramme(
     application.programme?.programmeId,
     application.entryMode,
   );
+
+  const requirements = useMemo(() => {
+    return [...rawRequirements].sort((a, b) => {
+      // Required documents first
+      if (a.required !== b.required) return a.required ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [rawRequirements]);
+
   const required = requirements.filter((r) => r.required);
   const uploadedRequired = required.filter((r) =>
     application.documents.some(
