@@ -121,9 +121,11 @@ export function CatalogueProvider({
 
                 for (const p of d.programmes ?? []) {
                   const pId = String(p.id);
-                  const rawLevel = p.type || "ND";
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const level = rawLevel as any;
+                  const rawType = String(p.type || "ND").trim().toUpperCase();
+                  const level =
+                    rawType === "BSC" || rawType === "BENG" || rawType === "DEGREE"
+                      ? (rawType as "BSC" | "BENG" | "DEGREE")
+                      : "ND";
                   prgList.push({
                     id: pId,
                     departmentId: dId,
@@ -131,13 +133,13 @@ export function CatalogueProvider({
                     sessionId: sessId,
                     name: p.name,
                     level,
-                    code: `${d.code || ""}-${level}`,
+                    code: p.code || `${d.code || ""}-${level}`,
                     option: p.option || null,
-                    durationYears: p.duration_years ?? 2,
+                    durationYears: p.duration_years ?? (level === "BENG" ? 5 : level === "BSC" ? 4 : 2),
                     cutoffMark: typeof p.cutoff_mark === "number" ? p.cutoff_mark : null,
                     applicationFee: p.application_fee,
                     totalFee: p.total_fee,
-                    acceptingApplications: true,
+                    acceptingApplications: p.is_open ?? true,
                   });
                 }
               }
@@ -218,10 +220,9 @@ export function CatalogueProvider({
   const listDepartmentsFn = useCallback(
     (schoolId?: string) => {
       if (!schoolId) return departments;
-      const filtered = departments.filter(
+      return departments.filter(
         (d) => String(d.schoolId) === String(schoolId),
       );
-      return filtered.length > 0 ? filtered : departments;
     },
     [departments],
   );
@@ -229,10 +230,9 @@ export function CatalogueProvider({
   const listProgrammesFn = useCallback(
     (departmentId?: string) => {
       if (!departmentId) return programmes;
-      const filtered = programmes.filter(
+      return programmes.filter(
         (p) => String(p.departmentId) === String(departmentId),
       );
-      return filtered.length > 0 ? filtered : programmes;
     },
     [programmes],
   );

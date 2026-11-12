@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Award,
@@ -28,6 +28,34 @@ function formatProgrammeLevel(level?: string): string {
   if (up === "ND") return "National Diploma (ND)";
   if (up === "CERT") return "Certificate";
   return level;
+}
+
+function isDegreeProg(p: { level?: string } | undefined | null): boolean {
+  if (!p || !p.level) return false;
+  const up = String(p.level).trim().toUpperCase();
+  return (
+    up === "BSC" ||
+    up === "BENG" ||
+    up === "DEGREE" ||
+    up.includes("B.SC") ||
+    up.includes("B.ENG")
+  );
+}
+
+function formatProgrammeOptionLabel(prog: {
+  name: string;
+  level?: string;
+  option?: string | null;
+  cutoffMark?: number | null;
+}): string {
+  const formattedLvl = formatProgrammeLevel(prog.level);
+  let name = prog.name || "";
+  if (name.startsWith(formattedLvl)) {
+    name = name.slice(formattedLvl.length).trim();
+  }
+  const cutoff = prog.cutoffMark ? ` (Cut-Off: ${prog.cutoffMark})` : "";
+  const opt = prog.option ? ` (${prog.option})` : "";
+  return `${formattedLvl} ${name}${opt}${cutoff}`;
 }
 
 function getBadgeClass(mode: EntryMode) {
@@ -73,7 +101,7 @@ export default function ProgrammeStep() {
   const router = useRouter();
   const { application, updateProgramme } = useApplication();
   const {
-    loading,
+    loading: catalogueLoading,
     error: catalogueError,
     findActiveSession,
     findProgramme,
@@ -112,29 +140,40 @@ export default function ProgrammeStep() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Sync initial values from application once upon mount / load
+  const isProgForCategory = useCallback(
+    (p: { level?: string } | undefined | null, cat: "ND" | "DEGREE") => {
+      const isDeg = isDegreeProg(p);
+      return cat === "DEGREE" ? isDeg : !isDeg;
+    },
+    [],
+  );
+
+  // Sync initial values from application once catalogue is loaded
   const hasInitializedRef = useRef(false);
   useEffect(() => {
-    if (!hasInitializedRef.current && application.id) {
+    if (catalogueLoading || !application.id) return;
+    if (!hasInitializedRef.current) {
       if (application.entryMode) {
         setSelectedEntryMode(application.entryMode as EntryMode);
       }
-      if (sel?.schoolId) setSelectedSchoolId(sel.schoolId);
-      if (sel?.departmentId) setSelectedDepartmentId(sel.departmentId);
       if (sel?.programmeId) {
-        setSelectedProgrammeId(sel.programmeId);
         const prog = findProgramme(sel.programmeId);
         if (prog) {
-          const isDeg =
-            prog.level === "BSC" ||
-            prog.level === "BENG" ||
-            prog.level === "DEGREE";
+          const isDeg = isDegreeProg(prog);
           setProgrammeCategory(isDeg ? "DEGREE" : "ND");
+          setSelectedProgrammeId(String(prog.id));
+          if (prog.schoolId) setSelectedSchoolId(String(prog.schoolId));
+          if (prog.departmentId) setSelectedDepartmentId(String(prog.departmentId));
+          hasInitializedRef.current = true;
+          return;
         }
       }
+      if (sel?.schoolId) setSelectedSchoolId(String(sel.schoolId));
+      if (sel?.departmentId) setSelectedDepartmentId(String(sel.departmentId));
+      if (sel?.programmeId) setSelectedProgrammeId(String(sel.programmeId));
       hasInitializedRef.current = true;
     }
-  }, [application.id, application.entryMode, sel, findProgramme]);
+  }, [catalogueLoading, application.id, application.entryMode, sel, findProgramme]);
 
   // Handle switching between ND and DEGREE
   const handleCategoryChange = (newCat: "ND" | "DEGREE") => {
@@ -142,21 +181,20 @@ export default function ProgrammeStep() {
     setError(null);
 
     // If switching to ND and current entry mode is degree-only, default to UTME
-    if (newCat === "ND" && (selectedEntryMode === "DE" || selectedEntryMode === "JUPEB" || selectedEntryMode === "INTERNATIONAL")) {
+    if (
+      newCat === "ND" &&
+      (selectedEntryMode === "DE" ||
+        selectedEntryMode === "JUPEB" ||
+        selectedEntryMode === "INTERNATIONAL" ||
+        selectedEntryMode === "TRANSFER")
+    ) {
       setSelectedEntryMode("UTME");
     }
 
-    // Reset programme if currently selected programme does not belong to the new category
-    if (selectedProgrammeId) {
-      const prog = findProgramme(selectedProgrammeId);
-      if (prog) {
-        const isProgDegree =
-          prog.level === "BSC" || prog.level === "BENG" || prog.level === "DEGREE";
-        if ((newCat === "DEGREE" && !isProgDegree) || (newCat === "ND" && isProgDegree)) {
-          setSelectedProgrammeId("");
-        }
-      }
-    }
+    // Reset cascade selections when switching categories
+    setSelectedSchoolId("");
+    setSelectedDepartmentId("");
+    setSelectedProgrammeId("");
   };
 
   const allSchools = listSchools();
@@ -167,39 +205,65 @@ export default function ProgrammeStep() {
       const depts = listDepartments(s.id);
       return depts.some((d) => {
         const progs = listProgrammes(d.id);
-        return progs.some((p) =>
-          programmeCategory === "DEGREE"
-            ? p.level === "BSC" || p.level === "BENG" || p.level === "DEGREE"
-            : p.level === "ND",
-        );
+        return progs.some((p) => isProgForCategory(p, programmeCategory));
       });
     });
-  }, [allSchools, listDepartments, listProgrammes, programmeCategory]);
+  }, [allSchools, listDepartments, listProgrammes, programmeCategory, isProgForCategory]);
 
   const rawDepartments = listDepartments(selectedSchoolId);
 
   // Filter departments that have programmes matching the active category
   const filteredDepartments = useMemo(() => {
+    if (!selectedSchoolId) return [];
     return rawDepartments.filter((d) => {
       const progs = listProgrammes(d.id);
-      return progs.some((p) =>
-        programmeCategory === "DEGREE"
-          ? p.level === "BSC" || p.level === "BENG" || p.level === "DEGREE"
-          : p.level === "ND",
-      );
+      return progs.some((p) => isProgForCategory(p, programmeCategory));
     });
-  }, [rawDepartments, listProgrammes, programmeCategory]);
+  }, [rawDepartments, selectedSchoolId, listProgrammes, programmeCategory, isProgForCategory]);
 
   const rawProgrammes = listProgrammes(selectedDepartmentId);
 
   // Filter programmes strictly matching the active category
   const availableProgrammes = useMemo(() => {
-    return rawProgrammes.filter((p) =>
-      programmeCategory === "DEGREE"
-        ? p.level === "BSC" || p.level === "BENG" || p.level === "DEGREE"
-        : p.level === "ND",
-    );
-  }, [rawProgrammes, programmeCategory]);
+    if (!selectedDepartmentId) return [];
+    return rawProgrammes.filter((p) => isProgForCategory(p, programmeCategory));
+  }, [rawProgrammes, selectedDepartmentId, programmeCategory, isProgForCategory]);
+
+  // Dynamic degree programmes schedule rows for interactive table
+  const degreeScheduleRows = useMemo(() => {
+    const rows: {
+      schoolId: string;
+      schoolName: string;
+      departmentId: string;
+      departmentName: string;
+      programmeId: string;
+      programmeName: string;
+      code: string;
+      durationYears: number;
+      isOpen: boolean;
+    }[] = [];
+
+    for (const s of allSchools) {
+      const depts = listDepartments(s.id);
+      for (const d of depts) {
+        const progs = listProgrammes(d.id).filter((p) => isDegreeProg(p));
+        for (const p of progs) {
+          rows.push({
+            schoolId: s.id,
+            schoolName: s.name,
+            departmentId: d.id,
+            departmentName: d.name,
+            programmeId: p.id,
+            programmeName: `${formatProgrammeLevel(p.level)} ${p.name}`,
+            code: p.code || `${d.code || ""}-${p.level}`,
+            durationYears: p.durationYears || (p.level === "BENG" ? 5 : 4),
+            isOpen: p.acceptingApplications !== false,
+          });
+        }
+      }
+    }
+    return rows;
+  }, [allSchools, listDepartments, listProgrammes]);
 
   const selectedProgramme = findProgramme(selectedProgrammeId);
   const notAccepting =
@@ -276,7 +340,7 @@ export default function ProgrammeStep() {
     }
   }
 
-  if (loading && allSchools.length === 0) {
+  if (catalogueLoading && allSchools.length === 0) {
     return <LoadingBlock label="Loading academic programmes…" />;
   }
 
@@ -428,6 +492,85 @@ export default function ProgrammeStep() {
           </p>
         </div>
 
+        {/* Degree Programmes Schedule Table */}
+        {programmeCategory === "DEGREE" && degreeScheduleRows.length > 0 && (
+          <div className={styles.tableCard}>
+            <div className={styles.tableHeaderWrap}>
+              <div>
+                <h4 className={styles.tableHeaderTitle}>
+                  <GraduationCap size={18} style={{ color: "var(--color-primary, #2563eb)" }} />
+                  Approved NUC CCMAS Degree Programmes (AE-FUNAI Affiliation)
+                </h4>
+                <p className={styles.tableHeaderSubtitle}>
+                  Click any programme row or use the dropdowns below to select your desired course of study.
+                </p>
+              </div>
+            </div>
+            <div className={styles.tableResponsive}>
+              <table className={styles.scheduleTable}>
+                <thead>
+                  <tr>
+                    <th>School / Faculty</th>
+                    <th>Department</th>
+                    <th>Degree Programme</th>
+                    <th>Code</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                    <th style={{ textAlign: "right" }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {degreeScheduleRows.map((row) => {
+                    const isSelected = selectedProgrammeId === row.programmeId;
+                    return (
+                      <tr
+                        key={row.programmeId}
+                        className={`${styles.scheduleTableRow} ${isSelected ? styles.scheduleTableRowSelected : ""}`}
+                        onClick={() => {
+                          setSelectedSchoolId(row.schoolId);
+                          setSelectedDepartmentId(row.departmentId);
+                          setSelectedProgrammeId(row.programmeId);
+                          setError(null);
+                        }}
+                      >
+                        <td style={{ fontWeight: 600 }}>{row.schoolName}</td>
+                        <td>{row.departmentName}</td>
+                        <td style={{ fontWeight: 700, color: "var(--color-primary, #2563eb)" }}>
+                          {row.programmeName}
+                        </td>
+                        <td>
+                          <span className={styles.codeBadge}>{row.code}</span>
+                        </td>
+                        <td>{row.durationYears} Years</td>
+                        <td>
+                          <span className={styles.statusOpenBadge}>
+                            ● {row.isOpen ? "Open" : "Closed"}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: "right" }}>
+                          <button
+                            type="button"
+                            className={`${styles.selectBtn} ${isSelected ? styles.selectBtnSelected : ""}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedSchoolId(row.schoolId);
+                              setSelectedDepartmentId(row.departmentId);
+                              setSelectedProgrammeId(row.programmeId);
+                              setError(null);
+                            }}
+                          >
+                            {isSelected ? "Selected ✓" : "Select Course"}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         <div className={form.grid}>
           <Field
             className={form.span2}
@@ -473,16 +616,11 @@ export default function ProgrammeStep() {
               placeholder={programmeCategory === "DEGREE" ? "Select a degree programme" : "Select an ND programme"}
               disabled={!selectedDepartmentId}
               onChange={handleProgrammeChange}
-              options={availableProgrammes.map((prog) => {
-                const formattedLvl = formatProgrammeLevel(prog.level);
-                const cutoff = prog.cutoffMark ? ` (Cut-Off: ${prog.cutoffMark})` : "";
-                const opt = prog.option ? ` (${prog.option})` : "";
-                return {
-                  value: prog.id,
-                  label: `${formattedLvl} ${prog.name}${opt}${cutoff}`,
-                  disabled: !prog.acceptingApplications,
-                };
-              })}
+              options={availableProgrammes.map((prog) => ({
+                value: prog.id,
+                label: formatProgrammeOptionLabel(prog),
+                disabled: !prog.acceptingApplications,
+              }))}
             />
           </Field>
         </div>

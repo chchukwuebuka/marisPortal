@@ -24,10 +24,12 @@ export interface ApiProgramme {
   id: number;
   offering_id?: number;
   name: string;
+  code?: string;
   type?: string; // 'ND' | 'BSC' | 'BENG'
   option?: string | null; // e.g. "Cybersecurity Option"
   duration_years?: number;
   cutoff_mark?: number | null;
+  is_open?: boolean;
   application_fee?: string;
   processing_fee?: string;
   total_fee?: string;
