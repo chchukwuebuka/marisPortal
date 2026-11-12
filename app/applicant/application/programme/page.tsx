@@ -1,8 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Award, BookOpen, CalendarClock, Check, GraduationCap, Layers } from "lucide-react";
+import {
+  Award,
+  BookOpen,
+  CalendarClock,
+  GraduationCap,
+  Layers,
+  Scroll,
+} from "lucide-react";
 import { useApplication } from "@/hooks/useApplication";
 import { useCatalogue } from "@/hooks/useCatalogue";
 import { StepActions, StepPanel } from "@/components/application";
@@ -40,6 +47,28 @@ function getBadgeClass(mode: EntryMode) {
   }
 }
 
+const ND_ENTRY_MODES: {
+  value: EntryMode;
+  label: string;
+  badge: string;
+  description: string;
+}[] = [
+  {
+    value: "UTME",
+    label: "JAMB UTME (Standard Entry)",
+    badge: "JAMB UTME",
+    description:
+      "Standard polytechnic admission for candidates with official JAMB UTME score for National Diploma.",
+  },
+  {
+    value: "TRANSFER",
+    label: "Inter-Polytechnic Transfer",
+    badge: "Transfer",
+    description:
+      "For students currently enrolled in another accredited polytechnic seeking transfer into an ND programme.",
+  },
+];
+
 export default function ProgrammeStep() {
   const router = useRouter();
   const { application, updateProgramme } = useApplication();
@@ -55,9 +84,20 @@ export default function ProgrammeStep() {
   const nav = stepNav("programme");
   const sel = application.programme;
 
-  const currentMode = (application.entryMode || sel?.entryMode || "UTME") as EntryMode;
-  const [selectedEntryMode, setSelectedEntryMode] = useState<EntryMode>(currentMode);
-  const [programmeFilter, setProgrammeFilter] = useState<"ALL" | "DEGREE" | "ND">("ALL");
+  const initialProg = findProgramme(sel?.programmeId);
+  const isInitiallyDegree =
+    initialProg?.level === "BSC" ||
+    initialProg?.level === "BENG" ||
+    initialProg?.level === "DEGREE";
+
+  // Category: "ND" (National Diploma) or "DEGREE" (B.Sc. & B.Eng.)
+  const [programmeCategory, setProgrammeCategory] = useState<"ND" | "DEGREE">(
+    isInitiallyDegree ? "DEGREE" : "ND",
+  );
+
+  const [selectedEntryMode, setSelectedEntryMode] = useState<EntryMode>(
+    (application.entryMode || sel?.entryMode || "UTME") as EntryMode,
+  );
 
   const [selectedSchoolId, setSelectedSchoolId] = useState<string>(
     sel?.schoolId ?? "",
@@ -72,51 +112,107 @@ export default function ProgrammeStep() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Sync initial values if application loads after initial render
+  // Sync initial values from application once upon mount / load
+  const hasInitializedRef = useRef(false);
   useEffect(() => {
-    if (application.entryMode && application.entryMode !== selectedEntryMode) {
-      setSelectedEntryMode(application.entryMode as EntryMode);
+    if (!hasInitializedRef.current && application.id) {
+      if (application.entryMode) {
+        setSelectedEntryMode(application.entryMode as EntryMode);
+      }
+      if (sel?.schoolId) setSelectedSchoolId(sel.schoolId);
+      if (sel?.departmentId) setSelectedDepartmentId(sel.departmentId);
+      if (sel?.programmeId) {
+        setSelectedProgrammeId(sel.programmeId);
+        const prog = findProgramme(sel.programmeId);
+        if (prog) {
+          const isDeg =
+            prog.level === "BSC" ||
+            prog.level === "BENG" ||
+            prog.level === "DEGREE";
+          setProgrammeCategory(isDeg ? "DEGREE" : "ND");
+        }
+      }
+      hasInitializedRef.current = true;
     }
-  }, [application.entryMode, selectedEntryMode]);
+  }, [application.id, application.entryMode, sel, findProgramme]);
 
-  useEffect(() => {
-    if (sel?.schoolId && !selectedSchoolId) {
-      setSelectedSchoolId(sel.schoolId);
-    }
-    if (sel?.departmentId && !selectedDepartmentId) {
-      setSelectedDepartmentId(sel.departmentId);
-    }
-    if (sel?.programmeId && !selectedProgrammeId) {
-      setSelectedProgrammeId(sel.programmeId);
-    }
-  }, [sel, selectedSchoolId, selectedDepartmentId, selectedProgrammeId]);
+  // Handle switching between ND and DEGREE
+  const handleCategoryChange = (newCat: "ND" | "DEGREE") => {
+    setProgrammeCategory(newCat);
+    setError(null);
 
-  const schools = listSchools();
-  const availableDepartments = listDepartments(selectedSchoolId);
+    // If switching to ND and current entry mode is degree-only, default to UTME
+    if (newCat === "ND" && (selectedEntryMode === "DE" || selectedEntryMode === "JUPEB" || selectedEntryMode === "INTERNATIONAL")) {
+      setSelectedEntryMode("UTME");
+    }
+
+    // Reset programme if currently selected programme does not belong to the new category
+    if (selectedProgrammeId) {
+      const prog = findProgramme(selectedProgrammeId);
+      if (prog) {
+        const isProgDegree =
+          prog.level === "BSC" || prog.level === "BENG" || prog.level === "DEGREE";
+        if ((newCat === "DEGREE" && !isProgDegree) || (newCat === "ND" && isProgDegree)) {
+          setSelectedProgrammeId("");
+        }
+      }
+    }
+  };
+
+  const allSchools = listSchools();
+
+  // Filter schools that have programmes matching the active category
+  const filteredSchools = useMemo(() => {
+    return allSchools.filter((s) => {
+      const depts = listDepartments(s.id);
+      return depts.some((d) => {
+        const progs = listProgrammes(d.id);
+        return progs.some((p) =>
+          programmeCategory === "DEGREE"
+            ? p.level === "BSC" || p.level === "BENG" || p.level === "DEGREE"
+            : p.level === "ND",
+        );
+      });
+    });
+  }, [allSchools, listDepartments, listProgrammes, programmeCategory]);
+
+  const rawDepartments = listDepartments(selectedSchoolId);
+
+  // Filter departments that have programmes matching the active category
+  const filteredDepartments = useMemo(() => {
+    return rawDepartments.filter((d) => {
+      const progs = listProgrammes(d.id);
+      return progs.some((p) =>
+        programmeCategory === "DEGREE"
+          ? p.level === "BSC" || p.level === "BENG" || p.level === "DEGREE"
+          : p.level === "ND",
+      );
+    });
+  }, [rawDepartments, listProgrammes, programmeCategory]);
+
   const rawProgrammes = listProgrammes(selectedDepartmentId);
 
-  // Filter programmes based on user level filter (ALL, DEGREE, ND)
+  // Filter programmes strictly matching the active category
   const availableProgrammes = useMemo(() => {
-    if (programmeFilter === "ALL") return rawProgrammes;
-    if (programmeFilter === "DEGREE") {
-      return rawProgrammes.filter(
-        (p) => p.level === "BSC" || p.level === "BENG" || p.level === "DEGREE",
-      );
-    }
-    if (programmeFilter === "ND") {
-      return rawProgrammes.filter((p) => p.level === "ND");
-    }
-    return rawProgrammes;
-  }, [rawProgrammes, programmeFilter]);
+    return rawProgrammes.filter((p) =>
+      programmeCategory === "DEGREE"
+        ? p.level === "BSC" || p.level === "BENG" || p.level === "DEGREE"
+        : p.level === "ND",
+    );
+  }, [rawProgrammes, programmeCategory]);
 
   const selectedProgramme = findProgramme(selectedProgrammeId);
   const notAccepting =
     !!selectedProgramme && !selectedProgramme.acceptingApplications;
 
   const isDegreeProgramme =
+    programmeCategory === "DEGREE" ||
     selectedProgramme?.level === "BSC" ||
     selectedProgramme?.level === "BENG" ||
     selectedProgramme?.level === "DEGREE";
+
+  const visibleEntryOptions =
+    programmeCategory === "DEGREE" ? ENTRY_MODE_OPTIONS : ND_ENTRY_MODES;
 
   const handleSchoolChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedSchoolId(e.target.value);
@@ -180,7 +276,7 @@ export default function ProgrammeStep() {
     }
   }
 
-  if (loading && schools.length === 0) {
+  if (loading && allSchools.length === 0) {
     return <LoadingBlock label="Loading academic programmes…" />;
   }
 
@@ -188,7 +284,7 @@ export default function ProgrammeStep() {
     <form onSubmit={handleSubmit} noValidate>
       <StepPanel
         title="Programme & Entry Mode Selection"
-        description="Select your admission track and the programme you wish to apply for at Marist Polytechnic / AE-FUNAI."
+        description="Choose whether you are applying for a National Diploma (ND) or Degree programme, select your admission track, and choose your course of study."
         footer={
           <StepActions
             backHref={nav.prevHref}
@@ -205,17 +301,87 @@ export default function ProgrammeStep() {
           </div>
         )}
 
-        {/* 1. Admission Category / Entry Mode Selector */}
+        {/* STEP 1: Programme Category (National Diploma vs Degree) */}
+        <div className={styles.categorySection}>
+          <div className={styles.sectionHeader}>
+            <h3 className={styles.sectionTitle}>1. Choose Programme Category</h3>
+            <p className={styles.sectionSubtitle}>
+              Select the qualification level you wish to study for at Marist.
+            </p>
+          </div>
+
+          <div className={styles.categoryGrid}>
+            {/* National Diploma Card */}
+            <div
+              role="button"
+              tabIndex={0}
+              className={`${styles.categoryCard} ${programmeCategory === "ND" ? styles.categoryCardSelected : ""}`}
+              onClick={() => handleCategoryChange("ND")}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  handleCategoryChange("ND");
+                }
+              }}
+            >
+              <div className={styles.categoryHeader}>
+                <div className={styles.categoryIconWrap}>
+                  <Scroll size={22} />
+                </div>
+                <span className={`${styles.categoryBadge} ${styles.categoryBadgeND}`}>
+                  National Diploma
+                </span>
+              </div>
+              <h4 className={styles.categoryTitle}>National Diploma (ND)</h4>
+              <p className={styles.categorySubtitle}>Awarded by Marist Polytechnic</p>
+              <p className={styles.categoryDesc}>
+                2-year polytechnic National Diploma programmes across Engineering, Computing, Applied Sciences, Environmental, and Business & Management.
+              </p>
+            </div>
+
+            {/* Degree Programme Card */}
+            <div
+              role="button"
+              tabIndex={0}
+              className={`${styles.categoryCard} ${programmeCategory === "DEGREE" ? styles.categoryCardSelected : ""}`}
+              onClick={() => handleCategoryChange("DEGREE")}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  handleCategoryChange("DEGREE");
+                }
+              }}
+            >
+              <div className={styles.categoryHeader}>
+                <div className={styles.categoryIconWrap}>
+                  <GraduationCap size={22} />
+                </div>
+                <span className={`${styles.categoryBadge} ${styles.categoryBadgeDegree}`}>
+                  B.Sc. & B.Eng. Degrees
+                </span>
+              </div>
+              <h4 className={styles.categoryTitle}>Degree Programmes</h4>
+              <p className={styles.categorySubtitle}>In affiliation with AE-FUNAI</p>
+              <p className={styles.categoryDesc}>
+                4 to 5-year university Bachelor of Science (B.Sc.) and Bachelor of Engineering (B.Eng.) programmes in academic affiliation with Alex Ekwueme Federal University.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* STEP 2: Admission Category / Entry Mode Selector */}
         <div className={styles.entryModeSection}>
           <div className={styles.sectionHeader}>
-            <h3 className={styles.sectionTitle}>1. Admission Track / Entry Mode</h3>
+            <h3 className={styles.sectionTitle}>
+              2. {programmeCategory === "DEGREE" ? "Degree Admission Track" : "ND Admission Track"}
+            </h3>
             <p className={styles.sectionSubtitle}>
-              Choose how you are applying. Document requirements and qualification checks are tailored to this mode.
+              {programmeCategory === "DEGREE"
+                ? "Choose how you are applying for the Degree programme. Document requirements adapt to this mode."
+                : "Choose your admission mode for the National Diploma programme."}
             </p>
           </div>
 
           <div className={styles.entryModeGrid}>
-            {ENTRY_MODE_OPTIONS.map((opt) => {
+            {visibleEntryOptions.map((opt) => {
               const isSelected = selectedEntryMode === opt.value;
               return (
                 <div
@@ -252,52 +418,28 @@ export default function ProgrammeStep() {
           </div>
         </div>
 
-        {/* 2. Programme Filter Pills */}
+        {/* STEP 3: School, Department, Programme Dropdowns */}
         <div className={styles.sectionHeader} style={{ marginTop: "24px" }}>
-          <h3 className={styles.sectionTitle}>2. Academic Programme Selection</h3>
+          <h3 className={styles.sectionTitle}>
+            3. Select Course of Study ({programmeCategory === "DEGREE" ? "Degree Offerings" : "National Diploma Offerings"})
+          </h3>
           <p className={styles.sectionSubtitle}>
-            Filter between Degree programmes and National Diploma programmes, then select your faculty and department.
+            Showing {programmeCategory === "DEGREE" ? "B.Sc. and B.Eng. degree" : "National Diploma (ND)"} programmes.
           </p>
         </div>
 
-        <div className={styles.filterRow}>
-          <span className={styles.filterLabel}>Filter:</span>
-          <button
-            type="button"
-            className={`${styles.filterPill} ${programmeFilter === "ALL" ? styles.filterPillActive : ""}`}
-            onClick={() => setProgrammeFilter("ALL")}
-          >
-            All Programmes
-          </button>
-          <button
-            type="button"
-            className={`${styles.filterPill} ${programmeFilter === "DEGREE" ? styles.filterPillActive : ""}`}
-            onClick={() => setProgrammeFilter("DEGREE")}
-          >
-            🎓 Degree (B.Sc. & B.Eng.)
-          </button>
-          <button
-            type="button"
-            className={`${styles.filterPill} ${programmeFilter === "ND" ? styles.filterPillActive : ""}`}
-            onClick={() => setProgrammeFilter("ND")}
-          >
-            📜 National Diploma (ND)
-          </button>
-        </div>
-
-        {/* 3. School, Department, Programme Dropdowns */}
         <div className={form.grid}>
           <Field
             className={form.span2}
-            label="School / Faculty"
+            label={programmeCategory === "DEGREE" ? "Faculty / School" : "School"}
             required
             error={error && !selectedSchoolId ? error : undefined}
           >
             <Select
               value={selectedSchoolId}
-              placeholder="Select a school / faculty"
+              placeholder={programmeCategory === "DEGREE" ? "Select a faculty" : "Select a school"}
               onChange={handleSchoolChange}
-              options={schools.map((s) => ({
+              options={filteredSchools.map((s) => ({
                 value: s.id,
                 label: s.name,
               }))}
@@ -314,7 +456,7 @@ export default function ProgrammeStep() {
               placeholder="Select a department"
               disabled={!selectedSchoolId}
               onChange={handleDepartmentChange}
-              options={availableDepartments.map((d) => ({
+              options={filteredDepartments.map((d) => ({
                 value: d.id,
                 label: d.name,
               }))}
@@ -322,13 +464,13 @@ export default function ProgrammeStep() {
           </Field>
 
           <Field
-            label="Programme"
+            label={programmeCategory === "DEGREE" ? "Degree Programme" : "ND Programme"}
             required
             error={error && selectedDepartmentId && !selectedProgrammeId ? error : undefined}
           >
             <Select
               value={selectedProgrammeId}
-              placeholder="Select a programme"
+              placeholder={programmeCategory === "DEGREE" ? "Select a degree programme" : "Select an ND programme"}
               disabled={!selectedDepartmentId}
               onChange={handleProgrammeChange}
               options={availableProgrammes.map((prog) => {
@@ -348,9 +490,9 @@ export default function ProgrammeStep() {
         {/* AE-FUNAI Affiliation Banner for Degree Programmes */}
         {isDegreeProgramme && (
           <div className={styles.affiliationNotice}>
-            <Award size={24} style={{ color: "#2563eb", flexShrink: 0 }} />
+            <Award size={26} style={{ color: "#2563eb", flexShrink: 0 }} />
             <div>
-              <strong>Degree Programme (Affiliation with AE-FUNAI):</strong> This B.Sc. / B.Eng. degree programme is offered by Marist in academic affiliation with Alex Ekwueme Federal University Ndufu-Alike (AE-FUNAI).
+              <strong>Degree Programme (In Affiliation with AE-FUNAI):</strong> This university degree programme is awarded in academic affiliation with Alex Ekwueme Federal University Ndufu-Alike (AE-FUNAI).
             </div>
           </div>
         )}
@@ -376,9 +518,12 @@ export default function ProgrammeStep() {
                 <Layers size={18} />
               </span>
               <div>
-                <p className={styles.detailLabel}>Award / Level</p>
+                <p className={styles.detailLabel}>Qualification</p>
                 <p className={styles.detailValue}>
                   {formatProgrammeLevel(selectedProgramme.level)}
+                  {selectedProgramme.level === "BSC" || selectedProgramme.level === "BENG"
+                    ? " (AE-FUNAI)"
+                    : ""}
                 </p>
               </div>
             </div>
