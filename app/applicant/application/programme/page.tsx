@@ -229,42 +229,6 @@ export default function ProgrammeStep() {
     return rawProgrammes.filter((p) => isProgForCategory(p, programmeCategory));
   }, [rawProgrammes, selectedDepartmentId, programmeCategory, isProgForCategory]);
 
-  // Dynamic degree programmes schedule rows for interactive table
-  const degreeScheduleRows = useMemo(() => {
-    const rows: {
-      schoolId: string;
-      schoolName: string;
-      departmentId: string;
-      departmentName: string;
-      programmeId: string;
-      programmeName: string;
-      code: string;
-      durationYears: number;
-      isOpen: boolean;
-    }[] = [];
-
-    for (const s of allSchools) {
-      const depts = listDepartments(s.id);
-      for (const d of depts) {
-        const progs = listProgrammes(d.id).filter((p) => isDegreeProg(p));
-        for (const p of progs) {
-          rows.push({
-            schoolId: s.id,
-            schoolName: s.name,
-            departmentId: d.id,
-            departmentName: d.name,
-            programmeId: p.id,
-            programmeName: `${formatProgrammeLevel(p.level)} ${p.name}`,
-            code: p.code || `${d.code || ""}-${p.level}`,
-            durationYears: p.durationYears || (p.level === "BENG" ? 5 : 4),
-            isOpen: p.acceptingApplications !== false,
-          });
-        }
-      }
-    }
-    return rows;
-  }, [allSchools, listDepartments, listProgrammes]);
-
   const selectedProgramme = findProgramme(selectedProgrammeId);
   const notAccepting =
     !!selectedProgramme && !selectedProgramme.acceptingApplications;
@@ -491,85 +455,6 @@ export default function ProgrammeStep() {
             Showing {programmeCategory === "DEGREE" ? "B.Sc. and B.Eng. degree" : "National Diploma (ND)"} programmes.
           </p>
         </div>
-
-        {/* Degree Programmes Schedule Table */}
-        {programmeCategory === "DEGREE" && degreeScheduleRows.length > 0 && (
-          <div className={styles.tableCard}>
-            <div className={styles.tableHeaderWrap}>
-              <div>
-                <h4 className={styles.tableHeaderTitle}>
-                  <GraduationCap size={18} style={{ color: "var(--color-primary, #2563eb)" }} />
-                  Approved NUC CCMAS Degree Programmes (AE-FUNAI Affiliation)
-                </h4>
-                <p className={styles.tableHeaderSubtitle}>
-                  Click any programme row or use the dropdowns below to select your desired course of study.
-                </p>
-              </div>
-            </div>
-            <div className={styles.tableResponsive}>
-              <table className={styles.scheduleTable}>
-                <thead>
-                  <tr>
-                    <th>School / Faculty</th>
-                    <th>Department</th>
-                    <th>Degree Programme</th>
-                    <th>Code</th>
-                    <th>Duration</th>
-                    <th>Status</th>
-                    <th style={{ textAlign: "right" }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {degreeScheduleRows.map((row) => {
-                    const isSelected = selectedProgrammeId === row.programmeId;
-                    return (
-                      <tr
-                        key={row.programmeId}
-                        className={`${styles.scheduleTableRow} ${isSelected ? styles.scheduleTableRowSelected : ""}`}
-                        onClick={() => {
-                          setSelectedSchoolId(row.schoolId);
-                          setSelectedDepartmentId(row.departmentId);
-                          setSelectedProgrammeId(row.programmeId);
-                          setError(null);
-                        }}
-                      >
-                        <td style={{ fontWeight: 600 }}>{row.schoolName}</td>
-                        <td>{row.departmentName}</td>
-                        <td style={{ fontWeight: 700, color: "var(--color-primary, #2563eb)" }}>
-                          {row.programmeName}
-                        </td>
-                        <td>
-                          <span className={styles.codeBadge}>{row.code}</span>
-                        </td>
-                        <td>{row.durationYears} Years</td>
-                        <td>
-                          <span className={styles.statusOpenBadge}>
-                            ● {row.isOpen ? "Open" : "Closed"}
-                          </span>
-                        </td>
-                        <td style={{ textAlign: "right" }}>
-                          <button
-                            type="button"
-                            className={`${styles.selectBtn} ${isSelected ? styles.selectBtnSelected : ""}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedSchoolId(row.schoolId);
-                              setSelectedDepartmentId(row.departmentId);
-                              setSelectedProgrammeId(row.programmeId);
-                              setError(null);
-                            }}
-                          >
-                            {isSelected ? "Selected ✓" : "Select Course"}
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
 
         <div className={form.grid}>
           <Field
