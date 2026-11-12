@@ -164,7 +164,10 @@ function jambToRequest(d: Partial<JambInfo>): Record<string, unknown> {
     body.registration_number = d.registrationNumber;
   if (d.examYear !== undefined) body.exam_year = d.examYear;
   if (d.score !== undefined) body.score = d.score;
-  if (d.examType !== undefined) body.exam_type = d.examType;
+  if (d.examType !== undefined) {
+    const et = String(d.examType).trim();
+    body.exam_type = et === "Direct Entry" || et === "DE" ? "DE" : "UTME";
+  }
   if (d.firstChoiceInstitution !== undefined)
     body.first_choice_institution = d.firstChoiceInstitution;
   if (d.courseApplied !== undefined) body.course_applied = d.courseApplied;
@@ -191,7 +194,10 @@ function parseJamb(raw: unknown): Partial<JambInfo> | null {
   const sc = num(o.score);
   if (sc !== undefined) out.score = sc;
   const et = str(o.exam_type);
-  if (et !== undefined) out.examType = et as JambInfo["examType"];
+  if (et !== undefined) {
+    out.examType =
+      et === "DE" || et === "Direct Entry" ? "Direct Entry" : "UTME";
+  }
   const inst = str(o.first_choice_institution);
   if (inst !== undefined) out.firstChoiceInstitution = inst;
   const course = str(o.course_applied);
