@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
+  Award,
   ClipboardCheck,
   GraduationCap,
   Lock,
@@ -15,6 +16,7 @@ import styles from "./auth.module.css";
 
 const OPEN_FEATURES = [
   { icon: GraduationCap, label: "Apply to National Diploma (ND) programmes" },
+  { icon: Award, label: "Apply to Degree programmes (in affiliation with AE-FUNAI)" },
   { icon: UploadCloud, label: "Upload your documents once" },
   { icon: ClipboardCheck, label: "Track your admission in real time" },
 ];
