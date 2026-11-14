@@ -63,3 +63,4 @@ export function clearStudentSessionActivity(): void {
     /* ignore */
   }
 }
+
