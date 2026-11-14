@@ -30,6 +30,9 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get("redirect") || searchParams.get("next");
+  const isSessionExpired =
+    searchParams.get("reason") === "session_expired" ||
+    searchParams.get("expired") === "1";
   const { login } = useAuth();
   const [formError, setFormError] = useState<string | null>(null);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
@@ -129,6 +132,17 @@ function LoginForm() {
           <strong>{sessionClosedInfo.sessionName} Academic Session</strong> are
           currently closed. New applicants cannot apply at this time. Admitted
           students and registered applicants can sign in below.
+        </Alert>
+      )}
+
+      {isSessionExpired && !formError && (
+        <Alert
+          tone="warning"
+          title="Session Expired"
+          className={styles.demoNote}
+        >
+          Your session expired after 15 minutes of inactivity for your account
+          security. Please sign in again.
         </Alert>
       )}
 

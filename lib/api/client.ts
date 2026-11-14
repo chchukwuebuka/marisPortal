@@ -16,6 +16,11 @@ import {
   getRefreshToken,
   setTokens,
 } from "./tokens";
+import {
+  isStudentSessionExpired,
+  clearStudentSessionActivity,
+  recordStudentActivity,
+} from "./session-timeout";
 
 const RAW_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
@@ -113,6 +118,14 @@ function humanizeError(status: number, data: unknown): ApiErrorShape {
 let refreshInFlight: Promise<boolean> | null = null;
 
 async function performRefresh(): Promise<boolean> {
+  // If the student has been idle for >= 15 minutes, do not silently extend session.
+  if (isStudentSessionExpired()) {
+    clearTokens();
+    clearStudentSessionActivity();
+    emitAuthExpired();
+    return false;
+  }
+
   const refresh = getRefreshToken();
   if (!refresh) return false;
   try {
@@ -126,6 +139,7 @@ async function performRefresh(): Promise<boolean> {
     if (!data.access) return false;
     // SimpleJWT may or may not rotate the refresh token; keep the old one if not.
     setTokens({ access: data.access, refresh: data.refresh ?? refresh });
+    recordStudentActivity(true);
     return true;
   } catch {
     return false;
@@ -174,12 +188,17 @@ async function request<T>(
 
   let res = await doFetch();
 
+  if (res.ok && auth) {
+    recordStudentActivity();
+  }
+
   if (res.status === 401 && auth) {
     const refreshed = await refreshAccess();
     if (refreshed) {
       res = await doFetch();
     } else {
       clearTokens();
+      clearStudentSessionActivity();
       emitAuthExpired();
     }
   }

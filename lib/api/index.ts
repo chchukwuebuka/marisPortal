@@ -5,4 +5,5 @@
 export * from "./client";
 export * from "./tokens";
 export * from "./adapters";
+export * from "./session-timeout";
 export type * from "./types";
