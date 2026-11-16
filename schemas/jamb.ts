@@ -22,14 +22,22 @@ export const jambSchema = z
       .number({ error: "Enter a valid year" })
       .int()
       .min(1990, "Enter a valid year")
-      .max(CURRENT_YEAR, "Year cannot be in the future"),
+      .max(CURRENT_YEAR + 1, "Year cannot be in the future"),
     examType: z.enum(JAMB_EXAM_TYPES, { error: "Select an exam type" }),
     firstChoiceInstitution: z
       .string()
       .trim()
       .min(1, "First choice institution is required"),
     courseApplied: z.string().trim().min(1, "Course applied for is required"),
-    subjects: z.array(jambSubjectScoreSchema).optional().default([]),
+    subjects: z
+      .array(
+        z.object({
+          subject: z.string().optional().default(""),
+          score: z.union([z.number(), z.string()]).optional(),
+        })
+      )
+      .optional()
+      .default([]),
     score: z.number().optional(),
   })
   .superRefine((data, ctx) => {
@@ -42,7 +50,35 @@ export const jambSchema = z
         });
         return;
       }
-      const subjects = data.subjects.map((s) => s.subject.trim().toLowerCase());
+
+      for (let i = 0; i < data.subjects.length; i++) {
+        const item = data.subjects[i];
+        const subjName = typeof item?.subject === "string" ? item.subject.trim() : "";
+        const scoreVal =
+          typeof item?.score === "number"
+            ? item.score
+            : parseInt(String(item?.score ?? ""), 10);
+
+        if (!subjName) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Subject is required.",
+            path: ["subjects", i, "subject"],
+          });
+        }
+        if (isNaN(scoreVal) || scoreVal < 0 || scoreVal > 100) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Enter a score between 0 and 100.",
+            path: ["subjects", i, "score"],
+          });
+        }
+      }
+
+      const subjects = data.subjects
+        .map((s) => (s?.subject || "").trim().toLowerCase())
+        .filter(Boolean);
+
       const hasEnglish = subjects.some(
         (s) =>
           s === "use of english" ||
@@ -56,7 +92,7 @@ export const jambSchema = z
           path: ["subjects"],
         });
       }
-      if (new Set(subjects).size !== data.subjects.length) {
+      if (new Set(subjects).size !== subjects.length) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Duplicate subjects are not allowed.",

@@ -48,7 +48,16 @@ export default function JambStep() {
     return findProgramme(application.programme?.programmeId);
   }, [findProgramme, application.programme?.programmeId]);
 
+  const isInternational = application.entryMode === "INTERNATIONAL";
+  const isDirectTrack =
+    application.entryMode === "DE" ||
+    application.entryMode === "JUPEB" ||
+    application.entryMode === "TRANSFER";
+
   const initialSubjects = useMemo(() => {
+    if (isInternational || isDirectTrack) {
+      return [];
+    }
     if (j?.subjects && j.subjects.length === 4) {
       return j.subjects.map((s) => ({
         subject: s.subject || "",
@@ -61,18 +70,13 @@ export default function JambStep() {
       { subject: "", score: ("" as unknown as number) },
       { subject: "", score: ("" as unknown as number) },
     ];
-  }, [j]);
-
-  const isInternational = application.entryMode === "INTERNATIONAL";
-  const isDirectTrack =
-    application.entryMode === "DE" ||
-    application.entryMode === "JUPEB" ||
-    application.entryMode === "TRANSFER";
+  }, [j, isInternational, isDirectTrack]);
 
   const {
     register,
     control,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<JambInput, unknown, JambFormValues>({
     resolver: zodResolver(jambSchema),
@@ -90,7 +94,7 @@ export default function JambStep() {
         j?.firstChoiceInstitution ??
         (isInternational ? "Marist Polytechnic / AE-FUNAI" : ""),
       courseApplied: j?.courseApplied ?? chosenProgramme?.name ?? "",
-      subjects: initialSubjects,
+      subjects: isInternational || isDirectTrack ? [] : initialSubjects,
     },
   });
 
@@ -207,8 +211,14 @@ export default function JambStep() {
       }
 
       // 1. Save JAMB record (backend calculates and stores aggregate score)
+      const cleanSubjects = (values.subjects || []).map((s) => ({
+        subject: (s.subject || "").trim(),
+        score: typeof s.score === "number" ? s.score : parseInt(String(s.score || "0"), 10) || 0,
+      }));
+
       await updateJamb({
         ...values,
+        subjects: cleanSubjects,
         score: totalScore,
       });
 
@@ -320,8 +330,37 @@ export default function JambStep() {
     }
   }
 
+  async function handleExemptContinue() {
+    try {
+      setServerError(null);
+      await updateJamb({
+        registrationNumber: application.jamb?.registrationNumber || "INTERNATIONAL-EXEMPT",
+        examYear: application.jamb?.examYear || new Date().getFullYear(),
+        examType: "Direct Entry",
+        firstChoiceInstitution: application.jamb?.firstChoiceInstitution || "Marist Polytechnic / AE-FUNAI",
+        courseApplied: application.jamb?.courseApplied || chosenProgramme?.name || "Degree Programme",
+        subjects: [],
+        score: undefined,
+      });
+      router.push(nav.nextHref);
+    } catch (err: unknown) {
+      setServerError(err instanceof Error ? err.message : "Failed to proceed to Documents step.");
+    }
+  }
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate>
+    <form
+      onSubmit={handleSubmit(onSubmit, (formErrors) => {
+        console.error("JAMB form validation errors:", formErrors);
+        const firstErr = Object.values(formErrors)[0];
+        if (firstErr && typeof firstErr === "object" && "message" in firstErr) {
+          setServerError(String(firstErr.message));
+        } else {
+          setServerError("Please review required fields before continuing.");
+        }
+      })}
+      noValidate
+    >
       <StepPanel
         title="JAMB / UTME Information"
         description="Enter your 4 UTME subject scores. Your total JAMB score is automatically computed."
@@ -761,6 +800,17 @@ export default function JambStep() {
             <p style={{ color: "#1e40af", fontSize: "13px", margin: 0, fontWeight: 600 }}>
               ✓ You do not need to enter 4 UTME subject test scores. Please verify your prior institution details in the Educational Background step, and upload your qualifying credentials in the Documents step.
             </p>
+            <div style={{ marginTop: "16px", display: "flex", justifyContent: "flex-end" }}>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={handleExemptContinue}
+                disabled={isSubmitting}
+                rightIcon={<ArrowRight size={16} />}
+              >
+                Continue to Documents &rarr;
+              </Button>
+            </div>
           </div>
         ) : (
           <div style={{ marginBottom: "20px" }}>
@@ -825,8 +875,11 @@ export default function JambStep() {
                 (s) => s !== "Use of English" && (!otherSelected.includes(s) || s === currentSubject)
               );
 
-              const subjectErr = errors.subjects?.[idx]?.subject?.message;
-              const scoreErr = errors.subjects?.[idx]?.score?.message;
+              const itemErr = errors.subjects?.[idx] as
+                | { subject?: { message?: string }; score?: { message?: string } }
+                | undefined;
+              const subjectErr = itemErr?.subject?.message;
+              const scoreErr = itemErr?.score?.message;
 
               return (
                 <div
